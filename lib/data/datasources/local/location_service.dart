@@ -12,4 +12,10 @@ class LocationService{
   Future<PermissionStatus> requestPermission() async{
     return await _location.requestPermission();
   }
+
+  Future<LocationData> getCurrentLocation() async {
+    return await _location.getLocation();
+  }
+
+  Stream<LocationData> get locationStream => _location.onLocationChanged;
 }
