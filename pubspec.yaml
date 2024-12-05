@@ -40,6 +40,9 @@ dependencies:
   location: ^5.0.0
   mockito:
   build_runner: ^2.4.6
+  sqflite: ^2.2.0+3
+  sqflite_common_ffi:
+
 
 dev_dependencies:
   flutter_test:
