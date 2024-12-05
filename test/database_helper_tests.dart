@@ -1,6 +1,6 @@
 /*
 * Tests for DatabaseHelper which manages a SQLite database for tracking workout history
-* Key scenarios:
+* Scenarios:
 * - Database initialization and version management
 * - Table creation with required fields
 * - Database upgrades
