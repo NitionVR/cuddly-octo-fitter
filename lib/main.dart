@@ -1,17 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile_project_fitquest/presentation/screens/home_screen.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/interval_training_view_model.dart';
+import 'package:mobile_project_fitquest/presentation/screens/login_screen.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart';
+
+import 'domain/repository/firebase_auth_repository.dart';
+import 'firebase_options.dart';
 import 'domain/repository/tracking_repository.dart';
+import 'domain/repository/auth_repository.dart';
 import 'presentation/viewmodels/map_view_model.dart';
 import 'presentation/viewmodels/analytics_view_model.dart';
+import 'presentation/viewmodels/interval_training_view_model.dart';
 import 'domain/usecases/location_tracking_use_case.dart';
 import 'data/datasources/local/location_service.dart';
 import 'data/datasources/local/tracking_local_data_source.dart';
 
-void main() {
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
   runApp(
     MultiProvider(
       providers: [
@@ -28,6 +41,19 @@ void main() {
           create: (_) => TrackingLocalDataSource(),
         ),
 
+        // Auth Repository (needs to be before AuthViewModel)
+        Provider<AuthRepository>(
+          create: (_) => FirebaseAuthRepository(),
+          lazy: false,
+        ),
+
+        // ViewModels
+        ChangeNotifierProvider<AuthViewModel>(
+          create: (context) => AuthViewModel(
+            context.read<AuthRepository>(),
+          ),
+        ),
+
         // Repository
         ProxyProvider<TrackingLocalDataSource, TrackingRepository>(
           update: (_, localDataSource, __) => TrackingRepository(localDataSource),
@@ -40,22 +66,21 @@ void main() {
           ),
         ),
 
-        // ViewModels
+        // Other ViewModels
         ChangeNotifierProvider<MapViewModel>(
           create: (context) {
             final locationTrackingUseCase = Provider.of<LocationTrackingUseCase>(context, listen: false);
             final trackingRepository = Provider.of<TrackingRepository>(context, listen: false);
             final locationService = Provider.of<LocationService>(context, listen: false);
             return MapViewModel(
-              locationTrackingUseCase,
-              trackingRepository,
-              locationService,
-              MapController()
+                locationTrackingUseCase,
+                trackingRepository,
+                locationService,
+                MapController()
             );
           },
         ),
 
-        // Analytics ViewModel
         ChangeNotifierProvider<AnalyticsViewModel>(
           create: (context) {
             final trackingRepository = Provider.of<TrackingRepository>(context, listen: false);
@@ -72,13 +97,12 @@ void main() {
   );
 }
 
-
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      title: 'GPS Tracker',
+      title: 'FitQuest',
       theme: ThemeData(
         primarySwatch: Colors.teal,
         scaffoldBackgroundColor: Colors.grey[100],
@@ -90,7 +114,24 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: MainScreen(),
+      home: AuthenticationWrapper(),
+    );
+  }
+}
+
+class AuthenticationWrapper extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<AuthViewModel>(
+      builder: (_, authViewModel, __) {
+        if (authViewModel.isLoading) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        print(authViewModel.isAuthenticated);
+        return authViewModel.isAuthenticated ? MainScreen() : LoginScreen();
+      },
     );
   }
 }
