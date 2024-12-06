@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "738711108804",
+    "project_id": "fitquest-e801c",
+    "storage_bucket": "fitquest-e801c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:738711108804:android:37a0d71a2628af1405dd91",
+        "android_client_info": {
+          "package_name": "com.example.mobile_project_fitquest"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDvqi9Tg3ToVxd_X-R0lWkDmqoB0PQx9XY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
