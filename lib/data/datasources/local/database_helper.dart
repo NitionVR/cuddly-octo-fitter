@@ -6,7 +6,7 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
   static Database? _database;
 
-  static const int _currentVersion = 2;
+  static const int _currentVersion = 3;
   static const String _databaseName = 'tracking_history.db';
 
   factory DatabaseHelper() => _instance;
@@ -20,56 +20,92 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    final path = join(await getDatabasesPath(), _databaseName);
-    return openDatabase(
-      path,
-      version: _currentVersion,
-      onCreate: onCreate,
-      onUpgrade: onUpgrade,
-    );
-  }
-
-  Future<void> onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE tracking_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        timestamp TEXT NOT NULL,
-        route TEXT NOT NULL,
-        total_distance REAL,
-        duration INTEGER,
-        avg_pace TEXT
-      )
-    ''');
-  }
-
-  Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      // Migrate from version 1 to 2
-      await db.execute('''
-        ALTER TABLE tracking_history 
-        ADD COLUMN total_distance REAL
-      ''');
-      await db.execute('''
-        ALTER TABLE tracking_history 
-        ADD COLUMN duration INTEGER
-      ''');
-      await db.execute('''
-        ALTER TABLE tracking_history 
-        ADD COLUMN avg_pace TEXT
-      ''');
+    try {
+      final path = join(await getDatabasesPath(), _databaseName);
+      return openDatabase(
+        path,
+        version: _currentVersion,
+        onCreate: onCreate,
+        onUpgrade: onUpgrade,
+      );
+    } catch (e) {
+      print('Database initialization error: $e');
+      rethrow;
     }
   }
 
-  // Method to check database version
-  Future<int> getDatabaseVersion() async {
-    final db = await database;
-    return (await db.getVersion());
+  Future<void> onCreate(Database db, int version) async {
+    try {
+      await db.execute('''
+        CREATE TABLE tracking_history (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id TEXT NOT NULL,
+          timestamp TEXT NOT NULL,
+          route TEXT NOT NULL,
+          total_distance REAL,
+          duration INTEGER,
+          avg_pace TEXT
+        )
+      ''');
+    } catch (e) {
+      print('Database creation error: $e');
+      rethrow;
+    }
   }
 
-  // Method to clear the database
-  Future<void> resetDatabase() async {
-    final path = join(await getDatabasesPath(), _databaseName);
-    await deleteDatabase(path);
-    _database = null;
+  Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
+    try {
+      if (oldVersion < 2) {
+        await db.execute('ALTER TABLE tracking_history ADD COLUMN total_distance REAL');
+        await db.execute('ALTER TABLE tracking_history ADD COLUMN duration INTEGER');
+        await db.execute('ALTER TABLE tracking_history ADD COLUMN avg_pace TEXT');
+      }
+
+      if (oldVersion < 3) {
+        // Check if user_id column exists before adding it
+        var tableInfo = await db.rawQuery('PRAGMA table_info(tracking_history)');
+        bool hasUserIdColumn = tableInfo.any((column) => column['name'] == 'user_id');
+
+        if (!hasUserIdColumn) {
+          await db.execute('ALTER TABLE tracking_history ADD COLUMN user_id TEXT');
+          await db.execute("UPDATE tracking_history SET user_id = 'legacy_user' WHERE user_id IS NULL");
+        }
+      }
+    } catch (e) {
+      print('Database upgrade error: $e');
+      rethrow;
+    }
   }
+
+  Future<int> getDatabaseVersion() async {
+    try {
+      final db = await database;
+      return await db.getVersion();
+    } catch (e) {
+      print('Error getting database version: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> resetDatabase() async {
+    try {
+      final path = join(await getDatabasesPath(), _databaseName);
+      await deleteDatabase(path);
+      _database = null;
+    } catch (e) {
+      print('Database reset error: $e');
+      rethrow;
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getTableInfo() async {
+    try {
+      final db = await database;
+      return await db.rawQuery('PRAGMA table_info(tracking_history)');
+    } catch (e) {
+      print('Error getting table info: $e');
+      rethrow;
+    }
+  }
+
 }
