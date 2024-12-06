@@ -11,7 +11,7 @@ import '../../domain/usecases/location_tracking_use_case.dart';
 
 class MapViewModel extends ChangeNotifier {
   final LocationTrackingUseCase _locationTrackingUseCase;
-  final MapController _mapController = MapController();
+  final MapController _mapController;
   final LocationService _locationService;
 
   final TrackingRepository trackingRepository;
@@ -29,6 +29,7 @@ class MapViewModel extends ChangeNotifier {
       this._locationTrackingUseCase,
       this.trackingRepository,
       this._locationService,
+      this._mapController,
       );
 
   List<Map<String, dynamic>> _history = [];
