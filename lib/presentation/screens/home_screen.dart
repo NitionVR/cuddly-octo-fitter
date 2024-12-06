@@ -6,6 +6,7 @@ import '../viewmodels/analytics_view_model.dart';
 import 'map_screen.dart';
 import 'history_screen.dart';
 import 'analytics_screen.dart';
+import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -33,16 +34,12 @@ class _MainScreenState extends State<MainScreen> {
             ],
             child: AnalyticsScreen(),
           ),
+          SettingsScreen(),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: [
+        type: BottomNavigationBarType.fixed, // Add this to show all items
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.map),
             label: 'Map',
@@ -55,7 +52,17 @@ class _MainScreenState extends State<MainScreen> {
             icon: Icon(Icons.bar_chart),
             label: 'Analytics',
           ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.settings),
+            label: 'Settings',
+          ),
         ],
+        currentIndex: _currentIndex,
+        onTap: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
       ),
     );
   }
