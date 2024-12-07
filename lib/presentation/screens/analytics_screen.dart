@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../viewmodels/analytics_view_model.dart';
@@ -7,13 +8,13 @@ class AnalyticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<AnalyticsViewModel>(context);
-
+    final authModel =  Provider.of<AuthViewModel>(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('Analytics'),
       ),
       body: RefreshIndicator(
-        onRefresh: () => viewModel.loadAnalytics(),
+        onRefresh: () => viewModel.loadAnalytics(authModel.currentUser!.id),
         child: ListView(
           padding: const EdgeInsets.all(16.0),
           children: [
