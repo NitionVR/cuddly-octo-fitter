@@ -1,4 +1,4 @@
-import '../entities/goals/fitness_goal.dart';
+import '../../entities/goals/fitness_goal.dart';
 
 abstract class GoalsRepository {
   Future<List<FitnessGoal>> getUserGoals(String userId);
