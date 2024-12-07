@@ -1,6 +1,6 @@
 // lib/presentation/screens/training/plan_details_screen.dart
 import 'package:flutter/material.dart';
-import '../../domain/entities/training/training_plan.dart';
+import '../../../domain/entities/training/training_plan.dart';
 
 class PlanDetailsScreen extends StatelessWidget {
   final TrainingPlan plan;

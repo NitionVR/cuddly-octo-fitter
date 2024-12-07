@@ -1,7 +1,7 @@
 import 'package:latlong2/latlong.dart';
-import '../../data/datasources/local/tracking_local_data_source.dart';
-import '../../data/models/running_stats.dart';
-import '../../data/models/weekly_summary.dart';
+import '../../../data/datasources/local/tracking_local_data_source.dart';
+import '../../../data/models/running_stats.dart';
+import '../../../data/models/weekly_summary.dart';
 
 class TrackingRepository {
   final TrackingLocalDataSource localDataSource;

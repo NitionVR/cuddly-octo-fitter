@@ -1,8 +1,8 @@
 // lib/presentation/screens/interval_training_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/training/interval_training_view_model.dart';
-import '../../domain/entities/interval_workout.dart';
+import '../../viewmodels/training/interval_training_view_model.dart';
+import '../../../domain/entities/interval_workout.dart';
 
 class IntervalTrainingScreen extends StatelessWidget {
   @override

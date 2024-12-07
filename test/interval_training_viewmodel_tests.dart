@@ -9,7 +9,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_project_fitquest/domain/entities/interval_workout.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/interval_training_view_model.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/training/interval_training_view_model.dart';
 
 void main() {
   late IntervalTrainingViewModel viewModel;

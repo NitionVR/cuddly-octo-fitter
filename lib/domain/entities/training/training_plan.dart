@@ -1,5 +1,5 @@
-// lib/domain/entities/training_plan.dart
-import '../enums/workout_type.dart';
+
+import '../../enums/workout_type.dart';
 
 class TrainingPlan {
   final String id;

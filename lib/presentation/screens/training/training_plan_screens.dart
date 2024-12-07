@@ -1,9 +1,9 @@
 // lib/presentation/screens/training/training_plans_screen.dart
 import 'package:flutter/material.dart';
-import 'package:mobile_project_fitquest/presentation/screens/plan_details_screen.dart';
+import 'package:mobile_project_fitquest/presentation/screens/training/plan_details_screen.dart';
 import 'package:provider/provider.dart';
-import '../../domain/entities/training/training_plan.dart';
-import '../viewmodels/training/training_plan_view_model.dart';
+import '../../../domain/entities/training/training_plan.dart';
+import '../../viewmodels/training/training_plan_view_model.dart';
 import 'active_plan_screen.dart';
 
 class TrainingPlansScreen extends StatelessWidget {
