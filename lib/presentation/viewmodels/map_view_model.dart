@@ -4,15 +4,19 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:path/path.dart';
 import '../../data/datasources/local/location_service.dart';
 import '../../domain/entities/route_point.dart';
 import '../../domain/repository/tracking_repository.dart';
 import '../../domain/usecases/location_tracking_use_case.dart';
+import 'auth_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 class MapViewModel extends ChangeNotifier {
   final LocationTrackingUseCase _locationTrackingUseCase;
   final MapController _mapController;
   final LocationService _locationService;
+  final AuthViewModel _authViewModel;
 
   final TrackingRepository trackingRepository;
 
@@ -30,6 +34,7 @@ class MapViewModel extends ChangeNotifier {
       this.trackingRepository,
       this._locationService,
       this._mapController,
+      this._authViewModel,
       );
 
   List<Map<String, dynamic>> _history = [];
@@ -219,9 +224,17 @@ class MapViewModel extends ChangeNotifier {
     return "$minutes:${seconds.toString().padLeft(2, '0')}";
   }
 
+
   Future<void> saveTrackingData() async {
     try {
+      final userId = _authViewModel.currentUser?.id;
+      if (userId == null) {
+        print('No user logged in');
+        return;
+      }
+
       await trackingRepository.saveTrackingData(
+        userId: userId,
         timestamp: DateTime.now(),
         route: _route,
         totalDistance: _totalDistance,
@@ -234,14 +247,29 @@ class MapViewModel extends ChangeNotifier {
       print('Error saving tracking data: $e');
     }
   }
-  Future<void> loadTrackingHistory() async {
-    _history = await trackingRepository.fetchTrackingHistory();
-    notifyListeners();
-  }
 
   Future<void> clearTrackingHistory() async {
-    await trackingRepository.clearTrackingHistory();
+    final userId = _authViewModel.currentUser?.id;
+    if (userId == null) {
+      print('No user logged in');
+      return;
+    }
+
+    await trackingRepository.clearTrackingHistory(userId);
     _history = [];
     notifyListeners();
   }
+
+  Future<void> loadTrackingHistory() async {
+    final userId = _authViewModel.currentUser?.id;
+    if (userId == null) {
+      print('No user logged in');
+      return;
+    }
+
+    _history = await trackingRepository.fetchTrackingHistory(userId: userId);
+    notifyListeners();
+  }
+
 }
+
