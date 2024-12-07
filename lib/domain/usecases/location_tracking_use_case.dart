@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
-import '../entities/route_point.dart';
+import '../entities/tracking/route_point.dart';
 
 class LocationTrackingUseCase {
   final Stream<LocationData> _locationStream;

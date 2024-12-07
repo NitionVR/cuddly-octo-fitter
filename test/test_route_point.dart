@@ -6,7 +6,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:latlong2/latlong.dart';
-import 'package:mobile_project_fitquest/domain/entities/route_point.dart';
+import 'package:mobile_project_fitquest/domain/entities/tracking/route_point.dart';
 
 
 void main (){

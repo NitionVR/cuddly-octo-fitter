@@ -2,18 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile_project_fitquest/presentation/screens/home_screen.dart';
-import 'package:mobile_project_fitquest/presentation/screens/login_screen.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:mobile_project_fitquest/presentation/screens/auth/login_screen.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/auth/auth_viewmodel.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/training/training_plan_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart';
 
-import 'domain/repository/firebase_auth_repository.dart';
+import 'domain/repository/auth/firebase_auth_repository.dart';
+import 'domain/repository/training/firebase_training_plan_repository.dart';
 import 'firebase_options.dart';
-import 'domain/repository/tracking_repository.dart';
-import 'domain/repository/auth_repository.dart';
-import 'presentation/viewmodels/map_view_model.dart';
+import 'domain/repository/tracking/tracking_repository.dart';
+import 'domain/repository/auth/auth_repository.dart';
+import 'presentation/viewmodels/tracking/map_view_model.dart';
 import 'presentation/viewmodels/analytics_view_model.dart';
-import 'presentation/viewmodels/interval_training_view_model.dart';
+import 'presentation/viewmodels/training/interval_training_view_model.dart';
 import 'domain/usecases/location_tracking_use_case.dart';
 import 'data/datasources/local/location_service.dart';
 import 'data/datasources/local/tracking_local_data_source.dart';
@@ -92,6 +94,13 @@ void main() async {
 
         ChangeNotifierProvider(
           create: (_) => IntervalTrainingViewModel(),
+        ),
+
+        ChangeNotifierProvider<TrainingPlanViewModel>(
+          create: (context) => TrainingPlanViewModel(
+            FirebaseTrainingPlanRepository(),
+            context.read<AuthViewModel>().currentUser!.id,
+          ),
         ),
       ],
       child: MyApp(),

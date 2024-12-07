@@ -2,7 +2,7 @@
 import 'package:flutter/foundation.dart';
 import '../../data/models/personal_record.dart';
 import '../../data/models/running_stats.dart';
-import '../../domain/repository/tracking_repository.dart';
+import '../../domain/repository/tracking/tracking_repository.dart';
 import '../../data/models/weekly_summary.dart';
 
 

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/auth_viewmodel.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/auth/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../viewmodels/analytics_view_model.dart';

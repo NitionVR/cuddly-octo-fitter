@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
-import '../viewmodels/tracking/map_view_model.dart';
+import '../../viewmodels/tracking/map_view_model.dart';
 
 class MapScreen extends StatefulWidget {
   @override

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../domain/repository/tracking_repository.dart';
-import '../viewmodels/auth_viewmodel.dart';
-import '../viewmodels/map_view_model.dart';
+import '../../domain/repository/tracking/tracking_repository.dart';
+import '../viewmodels/auth/auth_viewmodel.dart';
+import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/analytics_view_model.dart';
-import 'map_screen.dart';
+import 'tracking/map_screen.dart';
 import 'history_screen.dart';
 import 'analytics_screen.dart';
 import 'settings_screen.dart';

@@ -5,11 +5,11 @@ import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:path/path.dart';
-import '../../data/datasources/local/location_service.dart';
-import '../../domain/entities/tracking/route_point.dart';
-import '../../domain/repository/tracking_repository.dart';
-import '../../domain/usecases/location_tracking_use_case.dart';
-import 'auth_viewmodel.dart';
+import '../../../data/datasources/local/location_service.dart';
+import '../../../domain/entities/tracking/route_point.dart';
+import '../../../domain/repository/tracking/tracking_repository.dart';
+import '../../../domain/usecases/location_tracking_use_case.dart';
+import '../auth/auth_viewmodel.dart';
 import 'package:provider/provider.dart';
 
 class MapViewModel extends ChangeNotifier {

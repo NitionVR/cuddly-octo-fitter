@@ -1,4 +1,3 @@
-// lib/domain/entities/workout.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:latlong2/latlong.dart';
 
@@ -17,6 +16,8 @@ class Workout {
   final double? elevationGain;
   final WorkoutType type;
   final String? notes;
+  final bool isSynced;
+  final DateTime lastModified;
 
   Workout({
     required this.id,
@@ -31,7 +32,9 @@ class Workout {
     this.elevationGain,
     this.type = WorkoutType.run,
     this.notes,
-  });
+    this.isSynced = false,
+    DateTime? lastModified,
+  }) : lastModified = lastModified ?? DateTime.now();
 
   Map<String, dynamic> toMap() {
     return {
@@ -50,6 +53,8 @@ class Workout {
       'elevationGain': elevationGain,
       'type': type.toString(),
       'notes': notes,
+      'isSynced': isSynced,
+      'lastModified': lastModified.toIso8601String(),
     };
   }
 
@@ -72,6 +77,8 @@ class Workout {
         orElse: () => WorkoutType.run,
       ),
       notes: map['notes'],
+      isSynced: map['isSynced'] ?? false,
+      lastModified: DateTime.parse(map['lastModified']),
     );
   }
 }
