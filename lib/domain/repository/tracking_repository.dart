@@ -9,18 +9,19 @@ class TrackingRepository {
   TrackingRepository(this.localDataSource);
 
   Future<void> saveTrackingData({
+    required String userId,
     required DateTime timestamp,
     required List<LatLng> route,
     double? totalDistance,
     int? duration,
     String? avgPace,
   }) async {
-    // Additional validation if needed
     if (route.isEmpty) {
       throw ArgumentError('Route cannot be empty');
     }
 
     await localDataSource.saveTrackingHistory(
+      userId: userId,
       timestamp: timestamp,
       route: route,
       totalDistance: totalDistance,
@@ -30,15 +31,16 @@ class TrackingRepository {
   }
 
   Future<List<Map<String, dynamic>>> fetchTrackingHistory({
+    required String userId,
     int limit = 20,
     int offset = 0,
   }) async {
     try {
-      final history = await localDataSource.getTrackingHistory(
+      return await localDataSource.getTrackingHistory(
+        userId: userId,
         limit: limit,
         offset: offset,
       );
-      return history;
     } catch (e) {
       print('Error fetching tracking history: $e');
       return [];
@@ -46,61 +48,69 @@ class TrackingRepository {
   }
 
   Future<List<Map<String, dynamic>>> fetchTrackingHistoryByDateRange({
+    required String userId,
     required DateTime startDate,
     required DateTime endDate,
     int limit = 50,
   }) async {
     try {
-      final history = await localDataSource.getTrackingHistoryByDateRange(
+      return await localDataSource.getTrackingHistoryByDateRange(
+        userId: userId,
         startDate: startDate,
         endDate: endDate,
         limit: limit,
       );
-      return history;
     } catch (e) {
       print('Error fetching tracking history by date range: $e');
       return [];
     }
   }
 
-  Future<Map<String, dynamic>?> fetchSingleTrackingHistory(int id) async {
+  Future<Map<String, dynamic>?> fetchSingleTrackingHistory({
+    required String userId,
+    required int id,
+  }) async {
     try {
-      return await localDataSource.getTrackingHistoryById(id);
+      return await localDataSource.getTrackingHistoryById(userId, id);
     } catch (e) {
       print('Error fetching single tracking history: $e');
       return null;
     }
   }
 
-  Future<void> clearTrackingHistory() async {
+  Future<void> clearTrackingHistory(String userId) async {
     try {
-      await localDataSource.clearTrackingHistory();
+      await localDataSource.clearTrackingHistory(userId);
     } catch (e) {
       print('Error clearing tracking history: $e');
     }
   }
 
-  Future<void> deleteSpecificTrackingHistory(int id) async {
+  Future<void> deleteSpecificTrackingHistory({
+    required String userId,
+    required int id,
+  }) async {
     try {
-      await localDataSource.deleteSpecificHistory(id);
+      await localDataSource.deleteSpecificHistory(userId, id);
     } catch (e) {
       print('Error deleting specific tracking history: $e');
     }
   }
 
-  Future<String> exportTrackingHistory() async {
+  Future<String> exportTrackingHistory(String userId) async {
     try {
-      return await localDataSource.exportTrackingHistoryToJson();
+      return await localDataSource.exportTrackingHistoryToJson(userId);
     } catch (e) {
       print('Error exporting tracking history: $e');
       return '[]';
     }
   }
 
+
   // Analytics methods
-  Future<Map<String, dynamic>> getTrackingAnalytics() async {
+  Future<Map<String, dynamic>> getTrackingAnalytics(String userId) async {
     try {
-      final history = await fetchTrackingHistory();
+      final history = await fetchTrackingHistory(userId: userId);
 
       if (history.isEmpty) {
         return {
@@ -173,9 +183,9 @@ class TrackingRepository {
     }
   }
 
-  Future<RunningStats> getRunningStats() async {
+  Future<RunningStats> getRunningStats(String userId) async {
     try {
-      final history = await fetchTrackingHistory();
+      final history = await fetchTrackingHistory(userId:userId);
       double totalDistance = 0;
       Duration totalDuration = Duration.zero;
       double longestRun = 0;
@@ -257,8 +267,8 @@ class TrackingRepository {
     }
   }
 
-  Future<List<WeeklySummary>> getWeeklySummaries() async {
-    final history = await fetchTrackingHistory();
+  Future<List<WeeklySummary>> getWeeklySummaries(String userId) async {
+    final history = await fetchTrackingHistory(userId:userId);
     final Map<String, List<Map<String, dynamic>>> weeklyRuns = {};
 
     for (var run in history) {
