@@ -41,7 +41,7 @@ void main() async {
           create: (_) => TrackingLocalDataSource(),
         ),
 
-        // Auth Repository (needs to be before AuthViewModel)
+
         Provider<AuthRepository>(
           create: (_) => FirebaseAuthRepository(),
           lazy: false,
@@ -72,11 +72,13 @@ void main() async {
             final locationTrackingUseCase = Provider.of<LocationTrackingUseCase>(context, listen: false);
             final trackingRepository = Provider.of<TrackingRepository>(context, listen: false);
             final locationService = Provider.of<LocationService>(context, listen: false);
+            final authviewModel = Provider.of<AuthViewModel>(context, listen: false);
             return MapViewModel(
                 locationTrackingUseCase,
                 trackingRepository,
                 locationService,
-                MapController()
+                MapController(),
+                authviewModel
             );
           },
         ),
