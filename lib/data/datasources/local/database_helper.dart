@@ -39,12 +39,41 @@ class DatabaseHelper {
       await db.execute('''
         CREATE TABLE tracking_history (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          last_sync TEXT NOT NULL,
           user_id TEXT NOT NULL,
           timestamp TEXT NOT NULL,
           route TEXT NOT NULL,
           total_distance REAL,
           duration INTEGER,
           avg_pace TEXT
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE training_plans (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          durationWeeks INTEGER NOT NULL,
+          difficulty TEXT NOT NULL,
+          type TEXT NOT NULL,
+          weeks TEXT NOT NULL,
+          imageUrl TEXT,
+          metadata TEXT,
+          isCustom INTEGER DEFAULT 0,
+          createdBy TEXT,
+          isActive INTEGER DEFAULT 1
+        )
+      ''');
+
+      await db.execute('''
+        CREATE TABLE completed_workouts (
+          userId TEXT NOT NULL,
+          weekId TEXT NOT NULL,
+          workoutId TEXT NOT NULL,
+          completed INTEGER NOT NULL,
+          PRIMARY KEY (userId, weekId, workoutId)
         )
       ''');
     } catch (e) {
