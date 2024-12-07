@@ -1,8 +1,8 @@
 // lib/presentation/screens/goals_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../viewmodels/goals/goals_view_model.dart';
-import '../../domain/entities/goals/fitness_goal.dart';
+import '../../viewmodels/goals/goals_view_model.dart';
+import '../../../domain/entities/goals/fitness_goal.dart';
 
 class GoalsScreen extends StatelessWidget {
   @override

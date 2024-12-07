@@ -1,8 +1,8 @@
 // lib/data/repositories/firebase_goals_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../data/datasources/local/database_helper.dart';
-import '../entities/goals/fitness_goal.dart';
+import '../../../data/datasources/local/database_helper.dart';
+import '../../entities/goals/fitness_goal.dart';
 import 'goals_repository.dart';
 
 
