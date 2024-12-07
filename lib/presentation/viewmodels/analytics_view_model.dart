@@ -24,13 +24,13 @@ class AnalyticsViewModel extends ChangeNotifier {
 
   AnalyticsViewModel(this._trackingRepository);
 
-  Future<void> loadAnalytics() async {
+  Future<void> loadAnalytics(String userId) async {
     _isLoading = true;
     notifyListeners();
 
     try {
       // Load all analytics data
-      final history = await _trackingRepository.fetchTrackingHistory();
+      final history = await _trackingRepository.fetchTrackingHistory(userId: userId);
 
       // Calculate running stats
       _stats = _calculateRunningStats(history);
@@ -50,9 +50,9 @@ class AnalyticsViewModel extends ChangeNotifier {
     }
   }
 
-  void updateTimeFrame(String timeFrame) {
+  void updateTimeFrame(String timeFrame, String userId) {
     _selectedTimeFrame = timeFrame;
-    loadAnalytics();
+    loadAnalytics(userId);
   }
 
   RunningStats _calculateRunningStats(List<Map<String, dynamic>> history) {
