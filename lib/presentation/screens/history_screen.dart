@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/map_view_model.dart';
 import '../viewmodels/route_replay_view_model.dart';
 import '../widgets/route_replay_widget.dart';
