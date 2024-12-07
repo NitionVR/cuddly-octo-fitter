@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../domain/repository/tracking_repository.dart';
+import '../viewmodels/auth_viewmodel.dart';
 import '../viewmodels/map_view_model.dart';
 import '../viewmodels/analytics_view_model.dart';
 import 'map_screen.dart';
@@ -18,6 +19,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authModel =  Provider.of<AuthViewModel>(context);
     return Scaffold(
       body: IndexedStack(
         index: _currentIndex,
@@ -29,7 +31,7 @@ class _MainScreenState extends State<MainScreen> {
               ChangeNotifierProvider(
                 create: (context) => AnalyticsViewModel(
                   Provider.of<TrackingRepository>(context, listen: false),
-                )..loadAnalytics(),
+                )..loadAnalytics(authModel.currentUser!.id),
               ),
             ],
             child: AnalyticsScreen(),
