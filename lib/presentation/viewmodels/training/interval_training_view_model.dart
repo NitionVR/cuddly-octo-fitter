@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 //import 'package:audioplayers/audioplayers.dart';
-import '../../domain/entities/interval_workout.dart';
+import '../../../domain/entities/interval_workout.dart';
 
 class IntervalTrainingViewModel extends ChangeNotifier {
   IntervalWorkout? _currentWorkout;
