@@ -28,6 +28,8 @@ class MapViewModel extends ChangeNotifier {
   String _pace = "0:00 min/km";
   Timer? _timer;
   bool _isReplaying = false;
+  bool _showGpsSignal = true;
+  int _gpsAccuracy = 0;
 
   MapViewModel(
       this._locationTrackingUseCase,
@@ -54,6 +56,10 @@ class MapViewModel extends ChangeNotifier {
   get locationService => _locationService;
 
   bool get isReplaying => _isReplaying;
+
+  bool get showGpsSignal => _showGpsSignal;
+
+  int get gpsAccuracy => _gpsAccuracy;
 
   set route(List<LatLng> value) {
     _route = value;
@@ -148,6 +154,19 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> centerOnCurrentLocation() async {
+    try{
+      final location = await _locationService.getCurrentLocation();
+      if (location.latitude != null && location.longitude != null){
+        _mapController.move(LatLng(location.latitude!, location.longitude!),
+        16.0,
+        );
+      }
+    } catch(e){
+      print('Error centering on current location, $e');
+    }
+  }
+
   void _updateUserLocation(RoutePoint routePoint) {
     print("Received location with accuracy: ${routePoint.position.latitude}, ${routePoint.position.longitude}");
 
@@ -160,6 +179,7 @@ class MapViewModel extends ChangeNotifier {
       return;
     }
 
+    _gpsAccuracy = routePoint.accuracy.round();
     // Add the new route point
     _route.add(routePoint.position);
 
