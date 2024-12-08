@@ -61,11 +61,11 @@ class IntervalWorkout {
       segments: [
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.recovery,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
       ],
       repetitions: 8,
@@ -79,39 +79,39 @@ class IntervalWorkout {
       segments: [
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.recovery,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 2),
+          duration: const Duration(minutes: 2),
         ),
         IntervalSegment(
           type: IntervalType.recovery,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 3),
+          duration: const Duration(minutes: 3),
         ),
         IntervalSegment(
           type: IntervalType.recovery,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 2),
+          duration: const Duration(minutes: 2),
         ),
         IntervalSegment(
           type: IntervalType.recovery,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
         IntervalSegment(
           type: IntervalType.running,
-          duration: Duration(minutes: 1),
+          duration: const Duration(minutes: 1),
         ),
       ],
     );

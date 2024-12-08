@@ -4,16 +4,18 @@ import '../../domain/entities/achievement.dart';
 import '../viewmodels/achievements_viewmodel.dart';
 
 class AchievementsScreen extends StatelessWidget {
+  const AchievementsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Achievements'),
+        title: const Text('Achievements'),
       ),
       body: Consumer<AchievementsViewModel>(
         builder: (context, viewModel, child) {
           if (viewModel.isLoading) {
-            return Center(child: CircularProgressIndicator());
+            return const Center(child: CircularProgressIndicator());
           }
 
           return CustomScrollView(
@@ -27,7 +29,7 @@ class AchievementsScreen extends StatelessWidget {
               ),
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Text(
                     'Recent Achievements',
                     style: Theme.of(context).textTheme.titleLarge,
@@ -71,9 +73,9 @@ class _AchievementProgress extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
@@ -89,7 +91,7 @@ class _AchievementProgress extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             LinearProgressIndicator(
               value: percentage / 100,
               backgroundColor: Colors.grey[200],
@@ -98,7 +100,7 @@ class _AchievementProgress extends StatelessWidget {
               ),
               minHeight: 8,
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               '${percentage.toStringAsFixed(1)}% Complete',
               style: Theme.of(context).textTheme.bodySmall,
@@ -118,7 +120,7 @@ class _AchievementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: ListTile(
         leading: Container(
           width: 48,
@@ -147,7 +149,7 @@ class _AchievementCard extends StatelessWidget {
           ),
         ),
         trailing: achievement.isUnlocked
-            ? Icon(Icons.check_circle, color: Colors.green)
+            ? const Icon(Icons.check_circle, color: Colors.green)
             : null,
         onTap: () => _showAchievementDetails(context),
       ),
@@ -185,9 +187,9 @@ class _AchievementCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(achievement.description),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             if (achievement.isUnlocked) ...[
-              Text(
+              const Text(
                 'Unlocked on',
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
@@ -205,7 +207,7 @@ class _AchievementCard extends StatelessWidget {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Close'),
+            child: const Text('Close'),
           ),
         ],
       ),

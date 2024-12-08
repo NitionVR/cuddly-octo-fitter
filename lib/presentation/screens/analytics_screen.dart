@@ -5,6 +5,8 @@ import 'package:fl_chart/fl_chart.dart';
 import '../viewmodels/analytics_view_model.dart';
 
 class AnalyticsScreen extends StatelessWidget {
+  const AnalyticsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<AnalyticsViewModel>(context);

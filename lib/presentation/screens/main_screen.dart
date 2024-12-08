@@ -3,23 +3,16 @@ import 'package:provider/provider.dart';
 import '../../domain/repository/achievements_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
 import '../../domain/repository/goals/goals_repository.dart';
-import '../viewmodels/auth/auth_viewmodel.dart';
-import '../viewmodels/tracking/map_view_model.dart';
-import '../viewmodels/analytics_view_model.dart';
 import 'home_screen.dart';
 import 'tracking/map_screen.dart';
-import 'history_screen.dart';
 import 'analytics_screen.dart';
 import 'settings_screen.dart';
-import 'achievements_screen.dart';
-import 'goals/goals_screen.dart';
-import 'training/active_plan_screen.dart';
-import 'training/interval_training_screen.dart';
-import 'training/plan_details_screen.dart';
 import 'training/training_plan_screens.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
+  const MainScreen({super.key});
+
   @override
   _MainScreenState createState() => _MainScreenState();
 }
@@ -46,10 +39,10 @@ class _MainScreenState extends State<MainScreen> {
               goalsRepository: goalsRepository,
               achievementsRepository: achievementsRepository,
             ),
-            TrainingPlansScreen(),
+            const TrainingPlansScreen(),
             MapScreen(),
-            AnalyticsScreen(),
-            SettingsScreen(),
+            const AnalyticsScreen(),
+            const SettingsScreen(),
           ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
@@ -66,8 +59,8 @@ class _MainScreenState extends State<MainScreen> {
       onPressed: () {
         setState(() => _currentIndex = 2);  // Switch to MapScreen
       },
-      icon: Icon(Icons.play_arrow),
-      label: Text('START RUN'),
+      icon: const Icon(Icons.play_arrow),
+      label: const Text('START RUN'),
       backgroundColor: Theme.of(context).primaryColor,
     );
   }
@@ -75,7 +68,7 @@ class _MainScreenState extends State<MainScreen> {
   Widget _buildBottomNavBar() {
     return BottomAppBar(
       color: AppColors.cardDark,
-      shape: CircularNotchedRectangle(),
+      shape: const CircularNotchedRectangle(),
       notchMargin: 8,
       elevation: 8,
       child: Row(
@@ -83,7 +76,7 @@ class _MainScreenState extends State<MainScreen> {
         children: [
           _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
           _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Plan'),
-          SizedBox(width: 80), // Space for FAB
+          const SizedBox(width: 80), // Space for FAB
           _buildNavItem(3, Icons.analytics_outlined, Icons.analytics, 'Analytics'),
           _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
         ],
@@ -93,7 +86,7 @@ class _MainScreenState extends State<MainScreen> {
 
   Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: IconButton(
         icon: Icon(
           _currentIndex == index ? activeIcon : icon,

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../data/datasources/local/tracking_local_data_source.dart';
 import '../../../data/models/running_stats.dart';
@@ -42,7 +43,9 @@ class TrackingRepository {
         offset: offset,
       );
     } catch (e) {
-      print('Error fetching tracking history: $e');
+      if (kDebugMode) {
+        print('Error fetching tracking history: $e');
+      }
       return [];
     }
   }
@@ -61,7 +64,9 @@ class TrackingRepository {
         limit: limit,
       );
     } catch (e) {
-      print('Error fetching tracking history by date range: $e');
+      if (kDebugMode) {
+        print('Error fetching tracking history by date range: $e');
+      }
       return [];
     }
   }
@@ -73,7 +78,9 @@ class TrackingRepository {
     try {
       return await localDataSource.getTrackingHistoryById(userId, id);
     } catch (e) {
-      print('Error fetching single tracking history: $e');
+      if (kDebugMode) {
+        print('Error fetching single tracking history: $e');
+      }
       return null;
     }
   }
@@ -82,7 +89,9 @@ class TrackingRepository {
     try {
       await localDataSource.clearTrackingHistory(userId);
     } catch (e) {
-      print('Error clearing tracking history: $e');
+      if (kDebugMode) {
+        print('Error clearing tracking history: $e');
+      }
     }
   }
 
@@ -93,7 +102,9 @@ class TrackingRepository {
     try {
       await localDataSource.deleteSpecificHistory(userId, id);
     } catch (e) {
-      print('Error deleting specific tracking history: $e');
+      if (kDebugMode) {
+        print('Error deleting specific tracking history: $e');
+      }
     }
   }
 
@@ -101,7 +112,9 @@ class TrackingRepository {
     try {
       return await localDataSource.exportTrackingHistoryToJson(userId);
     } catch (e) {
-      print('Error exporting tracking history: $e');
+      if (kDebugMode) {
+        print('Error exporting tracking history: $e');
+      }
       return '[]';
     }
   }
@@ -149,7 +162,9 @@ class TrackingRepository {
             : '0:00 min/km',
       };
     } catch (e) {
-      print('Error in getTrackingAnalytics: $e');
+      if (kDebugMode) {
+        print('Error in getTrackingAnalytics: $e');
+      }
       return {
         'totalRuns': 0,
         'totalDistance': 0.0,
@@ -178,7 +193,9 @@ class TrackingRepository {
 
       return '$minutes:${seconds.toString().padLeft(2, '0')}';
     } catch (e) {
-      print('Error calculating average pace: $e');
+      if (kDebugMode) {
+        print('Error calculating average pace: $e');
+      }
       return '0:00';
     }
   }
@@ -221,7 +238,9 @@ class TrackingRepository {
         longestDuration: longestDuration,
       );
     } catch (e) {
-      print('Error in getRunningStats: $e');
+      if (kDebugMode) {
+        print('Error in getRunningStats: $e');
+      }
       // Return default stats if calculation fails
       return RunningStats(
         totalDistance: 0,
@@ -246,7 +265,9 @@ class TrackingRepository {
 
       return seconds1 - seconds2;
     } catch (e) {
-      print('Error comparing paces: $e');
+      if (kDebugMode) {
+        print('Error comparing paces: $e');
+      }
       return 0;
     }
   }
@@ -262,7 +283,9 @@ class TrackingRepository {
 
       return "$wholeMinutes:${seconds.toString().padLeft(2, '0')} min/km";
     } catch (e) {
-      print('Error calculating average pace: $e');
+      if (kDebugMode) {
+        print('Error calculating average pace: $e');
+      }
       return "0:00 min/km";
     }
   }
@@ -305,23 +328,6 @@ class TrackingRepository {
     if (totalDistance == 0) return "0:00";
     final paceMinutes = totalDuration.inMinutes / totalDistance;
     return "${paceMinutes.floor()}:${((paceMinutes % 1) * 60).round().toString().padLeft(2, '0')}";
-  }
-
-  int _comparePaces(String pace1, String pace2) {
-    try {
-      // Extract just the numbers from pace strings (e.g., "15 min/km" -> "15")
-      final parts1 = pace1.split(' ')[0].split(':');
-      final parts2 = pace2.split(' ')[0].split(':');
-
-      // Convert to total seconds for comparison
-      final seconds1 = int.parse(parts1[0]) * 60 + (parts1.length > 1 ? int.parse(parts1[1]) : 0);
-      final seconds2 = int.parse(parts2[0]) * 60 + (parts2.length > 1 ? int.parse(parts2[1]) : 0);
-
-      return seconds1 - seconds2;
-    } catch (e) {
-      print('Error comparing paces: $e');
-      return 0; // Return 0 if comparison fails
-    }
   }
 
   DateTime _getWeekStart(DateTime date) {

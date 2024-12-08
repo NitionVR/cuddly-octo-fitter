@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../data/datasources/local/database_helper.dart';
 import '../../entities/goals/fitness_goal.dart';
@@ -30,7 +31,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
           .map((doc) => FitnessGoal.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Error fetching goals: $e');
+      if (kDebugMode) {
+        print('Error fetching goals: $e');
+      }
       // Fallback to local data if offline
       return _getLocalGoals(userId);
     }
@@ -47,7 +50,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
 
       return newGoal;
     } catch (e) {
-      print('Error creating goal: $e');
+      if (kDebugMode) {
+        print('Error creating goal: $e');
+      }
       throw Exception('Failed to create goal');
     }
   }
@@ -58,7 +63,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
       await _goalsCollection.doc(goal.id).update(goal.toMap());
       await _saveGoalLocally(goal);
     } catch (e) {
-      print('Error updating goal: $e');
+      if (kDebugMode) {
+        print('Error updating goal: $e');
+      }
       // Save locally even if cloud sync fails
       await _saveGoalLocally(goal);
     }
@@ -73,7 +80,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
         'isCompleted': progress >= 100,
       });
     } catch (e) {
-      print('Error updating goal progress: $e');
+      if (kDebugMode) {
+        print('Error updating goal progress: $e');
+      }
     }
   }
 
@@ -123,7 +132,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
         whereArgs: [goalId],
       );
     } catch (e) {
-      print('Error deleting goal: $e');
+      if (kDebugMode) {
+        print('Error deleting goal: $e');
+      }
       throw Exception('Failed to delete goal');
     }
   }

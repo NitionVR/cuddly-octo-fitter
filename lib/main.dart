@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:mobile_project_fitquest/presentation/screens/home_screen.dart';
 import 'package:mobile_project_fitquest/presentation/screens/auth/login_screen.dart';
 import 'package:mobile_project_fitquest/presentation/screens/main_screen.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/achievements_viewmodel.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/auth/auth_viewmodel.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/goals/goals_view_model.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/training/training_plan_view_model.dart';
@@ -77,7 +78,11 @@ void main() async {
           create: (_) => FirebaseAchievementsRepository(),
           lazy: false,
         ),
-
+        ChangeNotifierProvider<AchievementsViewModel>(
+          create: (context) => AchievementsViewModel(
+            context.read<AchievementsRepository>(),context.read<AuthViewModel>().currentUser!.id,
+          ),
+        ),
 
 
         // Repository

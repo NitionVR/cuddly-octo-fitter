@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../data/datasources/local/database_helper.dart';
 import '../../domain/entities/achievement.dart';
@@ -29,7 +30,9 @@ class FirebaseAchievementsRepository implements AchievementsRepository {
           .map((doc) => Achievement.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Error fetching achievements: $e');
+      if (kDebugMode) {
+        print('Error fetching achievements: $e');
+      }
       return _getLocalAchievements(userId);
     }
   }
@@ -54,7 +57,9 @@ class FirebaseAchievementsRepository implements AchievementsRepository {
       // Update local database
       await _updateLocalAchievement(achievementId, DateTime.now());
     } catch (e) {
-      print('Error unlocking achievement: $e');
+      if (kDebugMode) {
+        print('Error unlocking achievement: $e');
+      }
     }
   }
 
@@ -64,7 +69,9 @@ class FirebaseAchievementsRepository implements AchievementsRepository {
       await _achievementsCollection.doc(achievement.id).set(achievement.toMap());
       await _saveAchievementLocally(achievement);
     } catch (e) {
-      print('Error creating achievement: $e');
+      if (kDebugMode) {
+        print('Error creating achievement: $e');
+      }
       await _saveAchievementLocally(achievement);
     }
   }

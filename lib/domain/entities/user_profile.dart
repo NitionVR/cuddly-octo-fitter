@@ -71,8 +71,8 @@ class UserProfile {
     DateTime? lastModified,
   }) {
     return UserProfile(
-      userId: this.userId,
-      email: this.email,
+      userId: userId,
+      email: email,
       displayName: displayName ?? this.displayName,
       photoUrl: photoUrl ?? this.photoUrl,
       weight: weight ?? this.weight,
@@ -80,7 +80,7 @@ class UserProfile {
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
       gender: gender ?? this.gender,
       preferences: preferences ?? this.preferences,
-      createdAt: this.createdAt,
+      createdAt: createdAt,
       lastModified: lastModified ?? DateTime.now(),
     );
   }

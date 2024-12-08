@@ -9,6 +9,8 @@ import '../widgets/route_replay_widget.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
 
 class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final viewModel = Provider.of<MapViewModel>(context);
@@ -17,10 +19,10 @@ class HistoryScreen extends StatelessWidget {
       data: AppTheme.darkTheme,
       child: Scaffold(
         appBar: AppBar(
-          title: Text("Tracking History", style: TextStyle(color: AppColors.textPrimary)),
+          title: const Text("Tracking History", style: TextStyle(color: AppColors.textPrimary)),
           actions: [
             IconButton(
-              icon: Icon(Icons.delete, color: AppColors.textSecondary),
+              icon: const Icon(Icons.delete, color: AppColors.textSecondary),
               onPressed: () => _showClearHistoryDialog(context, viewModel),
             ),
           ],
@@ -29,11 +31,11 @@ class HistoryScreen extends StatelessWidget {
           future: viewModel.loadTrackingHistory(),
           builder: (context, snapshot) {
             if (snapshot.hasError) {
-              return Center(child: Text("Error loading history: ${snapshot.error}", style: TextStyle(color: AppColors.textPrimary)));
+              return Center(child: Text("Error loading history: ${snapshot.error}", style: const TextStyle(color: AppColors.textPrimary)));
             }
 
             if (viewModel.history.isEmpty) {
-              return Center(child: Text("No tracking history available.", style: TextStyle(color: AppColors.textPrimary)));
+              return const Center(child: Text("No tracking history available.", style: TextStyle(color: AppColors.textPrimary)));
             }
 
             return ListView.builder(
@@ -48,24 +50,24 @@ class HistoryScreen extends StatelessWidget {
 
                 return Card(
                   color: AppColors.cardDark,
-                  margin: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   child: ListTile(
-                    title: Text("Session ${index + 1}", style: TextStyle(color: AppColors.textPrimary)),
+                    title: Text("Session ${index + 1}", style: const TextStyle(color: AppColors.textPrimary)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           "Date: ${_formatTimestamp(timestamp)}",
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                         ),
-                        SizedBox(height: 4),
-                        Text("Duration: ${_formatDuration(duration)}", style: TextStyle(color: AppColors.textPrimary)),
-                        Text("Distance: ${totalDistance.toStringAsFixed(2)} km", style: TextStyle(color: AppColors.textPrimary)),
-                        Text("Avg Pace: $avgPace min/km", style: TextStyle(color: AppColors.textPrimary)),
+                        const SizedBox(height: 4),
+                        Text("Duration: ${_formatDuration(duration)}", style: const TextStyle(color: AppColors.textPrimary)),
+                        Text("Distance: ${totalDistance.toStringAsFixed(2)} km", style: const TextStyle(color: AppColors.textPrimary)),
+                        Text("Avg Pace: $avgPace min/km", style: const TextStyle(color: AppColors.textPrimary)),
                       ],
                     ),
                     trailing: IconButton(
-                      icon: Icon(Icons.play_circle_outline, color: AppColors.accentGreen),
+                      icon: const Icon(Icons.play_circle_outline, color: AppColors.accentGreen),
                       onPressed: () => _navigateToReplay(
                         context,
                         route,
@@ -104,7 +106,7 @@ class HistoryScreen extends StatelessWidget {
             data: AppTheme.darkTheme,
             child: Scaffold(
               appBar: AppBar(
-                title: Text("Route Replay", style: TextStyle(color: AppColors.textPrimary)),
+                title: const Text("Route Replay", style: TextStyle(color: AppColors.textPrimary)),
                 //subtitle: Text(_formatTimestamp(timestamp)),
               ),
               body: RouteReplayWidget(),
@@ -132,15 +134,15 @@ class HistoryScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Clear History", style: TextStyle(color: AppColors.textPrimary)),
-          content: Text("Are you sure you want to clear your entire tracking history?", style: TextStyle(color: AppColors.textPrimary)),
+          title: const Text("Clear History", style: TextStyle(color: AppColors.textPrimary)),
+          content: const Text("Are you sure you want to clear your entire tracking history?", style: TextStyle(color: AppColors.textPrimary)),
           actions: [
             TextButton(
-              child: Text("Cancel", style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text("Cancel", style: TextStyle(color: AppColors.textSecondary)),
               onPressed: () => Navigator.of(context).pop(),
             ),
             TextButton(
-              child: Text("Clear", style: TextStyle(color: AppColors.errorRed)),
+              child: const Text("Clear", style: TextStyle(color: AppColors.errorRed)),
               onPressed: () async {
                 await viewModel.clearTrackingHistory();
                 Navigator.of(context).pop();

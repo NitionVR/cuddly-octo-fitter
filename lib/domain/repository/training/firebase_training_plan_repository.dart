@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mobile_project_fitquest/domain/repository/training/training_plan_repository.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../data/datasources/local/database_helper.dart';
@@ -32,7 +33,9 @@ class FirebaseTrainingPlanRepository implements TrainingPlanRepository {
           .map((doc) => TrainingPlan.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
     } catch (e) {
-      print('Error fetching available plans: $e');
+      if (kDebugMode) {
+        print('Error fetching available plans: $e');
+      }
       // Fallback to local data
       return _getLocalPlans();
     }
@@ -60,7 +63,9 @@ class FirebaseTrainingPlanRepository implements TrainingPlanRepository {
         ...userPlan.data(),
       });
     } catch (e) {
-      print('Error fetching active plan: $e');
+      if (kDebugMode) {
+        print('Error fetching active plan: $e');
+      }
       return null;
     }
   }
@@ -93,7 +98,9 @@ class FirebaseTrainingPlanRepository implements TrainingPlanRepository {
 
       return plan;
     } catch (e) {
-      print('Error starting plan: $e');
+      if (kDebugMode) {
+        print('Error starting plan: $e');
+      }
       throw Exception('Failed to start plan');
     }
   }
@@ -118,7 +125,9 @@ class FirebaseTrainingPlanRepository implements TrainingPlanRepository {
       // Update local database
       await _updateLocalPlanStatus(planId, userId, false);
     } catch (e) {
-      print('Error completing plan: $e');
+      if (kDebugMode) {
+        print('Error completing plan: $e');
+      }
       throw Exception('Failed to complete plan');
     }
   }
@@ -156,7 +165,9 @@ class FirebaseTrainingPlanRepository implements TrainingPlanRepository {
       // Update local database
       await _updateLocalWorkoutStatus(userId, weekId, workoutId, completed);
     } catch (e) {
-      print('Error updating workout status: $e');
+      if (kDebugMode) {
+        print('Error updating workout status: $e');
+      }
       throw Exception('Failed to update workout status');
     }
   }

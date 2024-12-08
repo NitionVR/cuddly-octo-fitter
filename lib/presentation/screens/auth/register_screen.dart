@@ -20,7 +20,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Register'),
+        title: const Text('Register'),
         elevation: 0,
       ),
       body: SafeArea(
@@ -39,7 +39,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _emailController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email),
                     border: OutlineInputBorder(),
@@ -60,7 +60,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible
@@ -73,7 +73,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         });
                       },
                     ),
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   obscureText: !_isPasswordVisible,
                   validator: (value) {
@@ -89,7 +89,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 TextFormField(
                   controller: _confirmPasswordController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Confirm Password',
                     prefixIcon: Icon(Icons.lock_outline),
                     border: OutlineInputBorder(),
@@ -109,7 +109,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Consumer<AuthViewModel>(
                   builder: (context, authViewModel, _) {
                     if (authViewModel.isLoading) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -117,16 +117,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ElevatedButton(
                           onPressed: () => _handleRegister(context),
                           style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Register'),
+                          child: const Text('Register'),
                         ),
                         if (authViewModel.error != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               authViewModel.error!,
-                              style: TextStyle(color: Colors.red),
+                              style: const TextStyle(color: Colors.red),
                               textAlign: TextAlign.center,
                             ),
                           ),

@@ -3,35 +3,37 @@ import 'package:provider/provider.dart';
 import '../viewmodels/auth/auth_viewmodel.dart';
 
 class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     final authViewModel = context.watch<AuthViewModel>();
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Settings'),
+        title: const Text('Settings'),
       ),
       body: ListView(
         children: [
           // User Profile Section
           if (authViewModel.currentUser != null) ...[
             ListTile(
-              leading: CircleAvatar(
+              leading: const CircleAvatar(
                 child: Icon(Icons.person),
               ),
               title: Text(authViewModel.currentUser!.email),
-              subtitle: Text('Account Details'),
+              subtitle: const Text('Account Details'),
               onTap: () {
                 // Navigate to profile edit screen
               },
             ),
-            Divider(),
+            const Divider(),
           ],
 
           // App Settings
           ListTile(
-            leading: Icon(Icons.notifications),
-            title: Text('Notifications'),
+            leading: const Icon(Icons.notifications),
+            title: const Text('Notifications'),
             trailing: Switch(
               value: true, // Replace with actual notification settings
               onChanged: (value) {
@@ -40,8 +42,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.track_changes),
-            title: Text('Distance Units'),
+            leading: const Icon(Icons.track_changes),
+            title: const Text('Distance Units'),
             trailing: DropdownButton<String>(
               value: 'km',
               items: ['km', 'mi'].map((String value) {
@@ -56,8 +58,8 @@ class SettingsScreen extends StatelessWidget {
             ),
           ),
           ListTile(
-            leading: Icon(Icons.dark_mode),
-            title: Text('Dark Mode'),
+            leading: const Icon(Icons.dark_mode),
+            title: const Text('Dark Mode'),
             trailing: Switch(
               value: false, // Replace with actual theme settings
               onChanged: (value) {
@@ -67,10 +69,10 @@ class SettingsScreen extends StatelessWidget {
           ),
 
           // App Info
-          Divider(),
+          const Divider(),
           ListTile(
-            leading: Icon(Icons.info),
-            title: Text('About'),
+            leading: const Icon(Icons.info),
+            title: const Text('About'),
             onTap: () {
               // Show about dialog
               showAboutDialog(
@@ -82,18 +84,18 @@ class SettingsScreen extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: Icon(Icons.privacy_tip),
-            title: Text('Privacy Policy'),
+            leading: const Icon(Icons.privacy_tip),
+            title: const Text('Privacy Policy'),
             onTap: () {
               // Navigate to privacy policy
             },
           ),
 
           // Logout Section
-          Divider(),
+          const Divider(),
           ListTile(
-            leading: Icon(Icons.logout, color: Colors.red),
-            title: Text(
+            leading: const Icon(Icons.logout, color: Colors.red),
+            title: const Text(
               'Logout',
               style: TextStyle(color: Colors.red),
             ),
@@ -108,12 +110,12 @@ class SettingsScreen extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Logout'),
-        content: Text('Are you sure you want to logout?'),
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
@@ -129,7 +131,7 @@ class SettingsScreen extends StatelessWidget {
                 );
               }
             },
-            child: Text('Logout', style: TextStyle(color: Colors.red)),
+            child: const Text('Logout', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),

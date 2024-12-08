@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 
@@ -29,7 +30,9 @@ class DatabaseHelper {
         onUpgrade: onUpgrade,
       );
     } catch (e) {
-      print('Database initialization error: $e');
+      if (kDebugMode) {
+        print('Database initialization error: $e');
+      }
       rethrow;
     }
   }
@@ -96,7 +99,9 @@ class DatabaseHelper {
     ''');
 
     } catch (e) {
-      print('Database creation error: $e');
+      if (kDebugMode) {
+        print('Database creation error: $e');
+      }
       rethrow;
     }
   }
@@ -139,7 +144,9 @@ class DatabaseHelper {
       ''');
       }
     } catch (e) {
-      print('Database upgrade error: $e');
+      if (kDebugMode) {
+        print('Database upgrade error: $e');
+      }
       rethrow;
     }
   }
@@ -150,7 +157,9 @@ class DatabaseHelper {
       final db = await database;
       return await db.getVersion();
     } catch (e) {
-      print('Error getting database version: $e');
+      if (kDebugMode) {
+        print('Error getting database version: $e');
+      }
       rethrow;
     }
   }
@@ -161,7 +170,9 @@ class DatabaseHelper {
       await deleteDatabase(path);
       _database = null;
     } catch (e) {
-      print('Database reset error: $e');
+      if (kDebugMode) {
+        print('Database reset error: $e');
+      }
       rethrow;
     }
   }
@@ -171,7 +182,9 @@ class DatabaseHelper {
       final db = await database;
       return await db.rawQuery('PRAGMA table_info(tracking_history)');
     } catch (e) {
-      print('Error getting table info: $e');
+      if (kDebugMode) {
+        print('Error getting table info: $e');
+      }
       rethrow;
     }
   }

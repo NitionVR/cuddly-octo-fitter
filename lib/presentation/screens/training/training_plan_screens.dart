@@ -1,4 +1,3 @@
-// lib/presentation/screens/training/training_plans_screen.dart
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/presentation/screens/training/plan_details_screen.dart';
 import 'package:provider/provider.dart';
@@ -7,14 +6,16 @@ import '../../viewmodels/training/training_plan_view_model.dart';
 import 'active_plan_screen.dart';
 
 class TrainingPlansScreen extends StatelessWidget {
+  const TrainingPlansScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Training Plans'),
-          bottom: TabBar(
+          title: const Text('Training Plans'),
+          bottom: const TabBar(
             tabs: [
               Tab(text: 'Available Plans'),
               Tab(text: 'Active Plan'),
@@ -38,11 +39,11 @@ class _AvailablePlansTab extends StatelessWidget {
     return Consumer<TrainingPlanViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         if (viewModel.availablePlans.isEmpty) {
-          return Center(
+          return const Center(
             child: Text('No training plans available'),
           );
         }
@@ -67,7 +68,7 @@ class _TrainingPlanCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
         onTap: () => _showPlanDetails(context),
         child: Column(
@@ -81,7 +82,7 @@ class _TrainingPlanCard extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -89,26 +90,26 @@ class _TrainingPlanCard extends StatelessWidget {
                     plan.title,
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text(plan.description),
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       Chip(
                         label: Text('${plan.durationWeeks} weeks'),
                         backgroundColor: Colors.grey[200],
                       ),
-                      SizedBox(width: 8),
+                      const SizedBox(width: 8),
                       Chip(
                         label: Text(plan.difficulty.toString().split('.').last),
                         backgroundColor: _getDifficultyColor(plan.difficulty),
                       ),
                     ],
                   ),
-                  SizedBox(height: 16),
+                  const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () => _startPlan(context),
-                    child: Text('Start Plan'),
+                    child: const Text('Start Plan'),
                   ),
                 ],
               ),
@@ -145,19 +146,19 @@ class _TrainingPlanCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Start Training Plan'),
+        title: const Text('Start Training Plan'),
         content: Text('Are you ready to start ${plan.title}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               context.read<TrainingPlanViewModel>().startPlan(plan.id);
               Navigator.pop(context);
             },
-            child: Text('Start'),
+            child: const Text('Start'),
           ),
         ],
       ),
@@ -171,7 +172,7 @@ class _ActivePlanTab extends StatelessWidget {
     return Consumer<TrainingPlanViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
-          return Center(child: CircularProgressIndicator());
+          return const Center(child: CircularProgressIndicator());
         }
 
         final activePlan = viewModel.activePlan;
@@ -180,14 +181,14 @@ class _ActivePlanTab extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.fitness_center, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
+                const Icon(Icons.fitness_center, size: 64, color: Colors.grey),
+                const SizedBox(height: 16),
                 Text(
                   'No active training plan',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                SizedBox(height: 8),
-                Text('Start a plan to begin your training journey'),
+                const SizedBox(height: 8),
+                const Text('Start a plan to begin your training journey'),
               ],
             ),
           );

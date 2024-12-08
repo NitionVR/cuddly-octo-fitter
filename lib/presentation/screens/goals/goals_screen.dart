@@ -5,16 +5,18 @@ import '../../../domain/entities/goals/fitness_goal.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
 
 class GoalsScreen extends StatelessWidget {
+  const GoalsScreen({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Fitness Goals', style: TextStyle(color: AppColors.textPrimary)),
+          title: const Text('Fitness Goals', style: TextStyle(color: AppColors.textPrimary)),
           actions: [
             IconButton(
-              icon: Icon(Icons.add, color: AppColors.textSecondary),
+              icon: const Icon(Icons.add, color: AppColors.textSecondary),
               onPressed: () => _showCreateGoalDialog(context),
             ),
           ],
@@ -22,12 +24,12 @@ class GoalsScreen extends StatelessWidget {
         body: Consumer<GoalsViewModel>(
           builder: (context, viewModel, child) {
             if (viewModel.isLoading) {
-              return Center(child: CircularProgressIndicator());
+              return const Center(child: CircularProgressIndicator());
             }
 
             if (viewModel.error != null) {
               return Center(
-                child: Text(viewModel.error!, style: TextStyle(color: AppColors.errorRed)),
+                child: Text(viewModel.error!, style: const TextStyle(color: AppColors.errorRed)),
               );
             }
 
@@ -36,16 +38,16 @@ class GoalsScreen extends StatelessWidget {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.flag, size: 64, color: AppColors.textSecondary),
-                    SizedBox(height: 16),
+                    const Icon(Icons.flag, size: 64, color: AppColors.textSecondary),
+                    const SizedBox(height: 16),
                     Text(
                       'No active goals',
                       style: Theme.of(context).textTheme.titleLarge,
                     ),
-                    SizedBox(height: 8),
+                    const SizedBox(height: 8),
                     ElevatedButton(
                       onPressed: () => _showCreateGoalDialog(context),
-                      child: Text('Create a Goal'),
+                      child: const Text('Create a Goal'),
                     ),
                   ],
                 ),
@@ -68,7 +70,7 @@ class GoalsScreen extends StatelessWidget {
   void _showCreateGoalDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => CreateGoalDialog(),
+      builder: (context) => const CreateGoalDialog(),
     );
   }
 }
@@ -76,15 +78,15 @@ class GoalsScreen extends StatelessWidget {
 class _GoalCard extends StatelessWidget {
   final FitnessGoal goal;
 
-  const _GoalCard({Key? key, required this.goal}) : super(key: key);
+  const _GoalCard({super.key, required this.goal});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       color: AppColors.cardDark,
-      margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -96,12 +98,12 @@ class _GoalCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 IconButton(
-                  icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
+                  icon: const Icon(Icons.more_vert, color: AppColors.textSecondary),
                   onPressed: () => _showGoalOptions(context),
                 ),
               ],
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             LinearProgressIndicator(
               value: goal.progressPercentage / 100,
               backgroundColor: AppColors.progressBackground,
@@ -109,12 +111,12 @@ class _GoalCard extends StatelessWidget {
                 goal.isCompleted ? AppColors.successGreen : AppColors.accentGreen,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             Text(
               '${goal.progressPercentage.toStringAsFixed(1)}% Complete',
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            SizedBox(height: 4),
+            const SizedBox(height: 4),
             Text(
               _getGoalPeriodText(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -155,16 +157,16 @@ class _GoalCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: Icon(Icons.edit, color: AppColors.textSecondary),
-            title: Text('Edit Goal', style: TextStyle(color: AppColors.textPrimary)),
+            leading: const Icon(Icons.edit, color: AppColors.textSecondary),
+            title: const Text('Edit Goal', style: TextStyle(color: AppColors.textPrimary)),
             onTap: () {
               Navigator.pop(context);
               // TODO: Show edit dialog
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete, color: AppColors.errorRed),
-            title: Text('Delete Goal', style: TextStyle(color: AppColors.errorRed)),
+            leading: const Icon(Icons.delete, color: AppColors.errorRed),
+            title: const Text('Delete Goal', style: TextStyle(color: AppColors.errorRed)),
             onTap: () {
               Navigator.pop(context);
               _confirmDelete(context);
@@ -180,15 +182,15 @@ class _GoalCard extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: AppColors.cardDark,
-        title: Text('Delete Goal', style: TextStyle(color: AppColors.textPrimary)),
-        content: Text('Are you sure you want to delete this goal?', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Delete Goal', style: TextStyle(color: AppColors.textPrimary)),
+        content: const Text('Are you sure you want to delete this goal?', style: TextStyle(color: AppColors.textPrimary)),
         actions: [
           TextButton(
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: TextStyle(color: AppColors.errorRed)),
+            child: const Text('Delete', style: TextStyle(color: AppColors.errorRed)),
             onPressed: () {
               context.read<GoalsViewModel>().deleteGoal(goal.id);
               Navigator.pop(context);
@@ -201,6 +203,8 @@ class _GoalCard extends StatelessWidget {
 }
 
 class CreateGoalDialog extends StatefulWidget {
+  const CreateGoalDialog({super.key});
+
   @override
   _CreateGoalDialogState createState() => _CreateGoalDialogState();
 }
@@ -210,7 +214,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   late GoalPeriod _selectedPeriod = GoalPeriod.weekly;
   final _targetController = TextEditingController();
   DateTime _startDate = DateTime.now();
-  DateTime _endDate = DateTime.now().add(Duration(days: 7));
+  DateTime _endDate = DateTime.now().add(const Duration(days: 7));
 
   @override
   Widget build(BuildContext context) {
@@ -218,7 +222,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
       data: AppTheme.darkTheme,
       child: AlertDialog(
         backgroundColor: AppColors.cardDark,
-        title: Text('Create New Goal', style: TextStyle(color: AppColors.textPrimary)),
+        title: const Text('Create New Goal', style: TextStyle(color: AppColors.textPrimary)),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -228,7 +232,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                 items: GoalType.values.map((type) {
                   return DropdownMenuItem(
                     value: type,
-                    child: Text(type.toString().split('.').last, style: TextStyle(color: AppColors.textPrimary)),
+                    child: Text(type.toString().split('.').last, style: const TextStyle(color: AppColors.textPrimary)),
                   );
                 }).toList(),
                 onChanged: (value) {

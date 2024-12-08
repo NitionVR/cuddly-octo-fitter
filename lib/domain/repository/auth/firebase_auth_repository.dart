@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../../entities/user.dart';
 import 'auth_repository.dart';
 
@@ -51,7 +52,9 @@ class FirebaseAuthRepository implements AuthRepository {
         'id': credential.user!.uid,
       });
     } catch (e) {
-      print('Sign in error: $e');
+      if (kDebugMode) {
+        print('Sign in error: $e');
+      }
       throw _handleAuthError(e);
     }
   }
@@ -81,10 +84,14 @@ class FirebaseAuthRepository implements AuthRepository {
       // Create Firestore document
       await _firestore.collection('users').doc(user.id).set(user.toMap());
 
-      print('User document created successfully: ${user.id}');
+      if (kDebugMode) {
+        print('User document created successfully: ${user.id}');
+      }
       return user;
     } catch (e) {
-      print('Sign up error: $e');
+      if (kDebugMode) {
+        print('Sign up error: $e');
+      }
       throw _handleAuthError(e);
     }
   }
@@ -116,7 +123,9 @@ class FirebaseAuthRepository implements AuthRepository {
           'id': firebaseUser.uid,
         });
       } catch (e) {
-        print('Auth state change error: $e');
+        if (kDebugMode) {
+          print('Auth state change error: $e');
+        }
         return null;
       }
     });
@@ -139,7 +148,9 @@ class FirebaseAuthRepository implements AuthRepository {
         'id': firebaseUser.uid,
       });
     } catch (e) {
-      print('Get current user error: $e');
+      if (kDebugMode) {
+        print('Get current user error: $e');
+      }
       return null;
     }
   }
@@ -174,7 +185,9 @@ class FirebaseAuthRepository implements AuthRepository {
         'id': uid,
       });
     } catch (e) {
-      print('Error in _getUser: $e');
+      if (kDebugMode) {
+        print('Error in _getUser: $e');
+      }
       throw Exception('Failed to get user data');
     }
   }

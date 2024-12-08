@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/domain/repository/achievements_repository.dart';
 import 'package:provider/provider.dart';
-import '../../data/models/weekly_summary.dart';
 import '../../domain/entities/goals/fitness_goal.dart';
 import '../../domain/repository/goals/goals_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
@@ -11,16 +10,11 @@ import '../viewmodels/auth/auth_viewmodel.dart';
 import '../viewmodels/goals/goals_view_model.dart';
 import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/analytics_view_model.dart';
-import 'tracking/map_screen.dart';
 import 'history_screen.dart';
-import 'analytics_screen.dart';
-import 'settings_screen.dart';
 import 'achievements_screen.dart';
 import 'goals/goals_screen.dart';
-import 'training/active_plan_screen.dart';
 import 'training/interval_training_screen.dart';
-import 'training/plan_details_screen.dart';
-import 'training/training_plan_screens.dart';
+
 
 
 
@@ -31,7 +25,7 @@ class HomeScreen extends StatelessWidget {
   final AchievementsRepository _achievementsRepository;
 
   // Constructor to inject the dependencies
-  HomeScreen({
+  const HomeScreen({super.key,
     required TrackingRepository trackingRepository,
     required GoalsRepository goalsRepository,
     required AchievementsRepository achievementsRepository,
@@ -55,26 +49,32 @@ class HomeScreen extends StatelessWidget {
           create: (_) => AchievementsViewModel(_achievementsRepository, userId),
         ),
       ],
-      child: HomeScreenContent(),
+      child: const HomeScreenContent(),
     );
   }
 }
 
 class HomeScreenContent extends StatelessWidget {
+  const HomeScreenContent({super.key});
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildRecentActivitiesCard(context),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildGoalsCard(context),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildPersonalRecordsCard(context),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildQuickStatsRow(context),
+          const SizedBox(height: 16),
+          _buildIntervalTrainingCard(context),
+          const SizedBox(height: 16),
+          _buildAchievementsCard(context),
         ],
       ),
     );
@@ -87,7 +87,7 @@ class HomeScreenContent extends StatelessWidget {
       future: viewModel.getLastThreeActivities(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Card(
+          return const Card(
             child: Center(child: CircularProgressIndicator()),
           );
         }
@@ -97,7 +97,7 @@ class HomeScreenContent extends StatelessWidget {
             child: Center(
               child: Text(
                 "Error loading recent activities: ${snapshot.error}",
-                style: TextStyle(color: AppColors.textPrimary),
+                style: const TextStyle(color: AppColors.textPrimary),
               ),
             ),
           );
@@ -117,14 +117,14 @@ class HomeScreenContent extends StatelessWidget {
                 trailing: TextButton(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => HistoryScreen()),
+                    MaterialPageRoute(builder: (_) => const HistoryScreen()), //note here goes history screen
                   ),
-                  child: Text('More', style: TextStyle(color: AppColors.accentGreen)),
+                  child: const Text('More', style: TextStyle(color: AppColors.accentGreen)),
                 ),
               ),
-              Divider(color: AppColors.textSecondary),
+              const Divider(color: AppColors.textSecondary),
               if (recentActivities.isEmpty)
-                Padding(
+                const Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
                     'No recent activities',
@@ -132,7 +132,7 @@ class HomeScreenContent extends StatelessWidget {
                   ),
                 )
               else
-                ...recentActivities.map((activity) => _buildActivityItem(activity)).toList(),
+                ...recentActivities.map((activity) => _buildActivityItem(activity)),
             ],
           ),
         );
@@ -141,41 +141,37 @@ class HomeScreenContent extends StatelessWidget {
   }
 
   Widget _buildActivityItem(Map<String, dynamic> activity) {
-    print("activity");
-    print(activity); //manual logging
     final timestamp = activity['timestamp'];
     final duration = activity['duration'];
-    final totalDistance = activity['total_distance'] ?? 5; // Handle null totalDistance
+    final totalDistance = activity['total_distance'] ?? 00; // Handle null totalDistance
     final avgPace = activity['avg_pace'];
 
-    print(avgPace.toString());
-
     return Padding(
-      padding: EdgeInsets.all(8.0),
+      padding: const EdgeInsets.all(8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(Icons.directions_run, color: AppColors.accentGreen),
-          SizedBox(width: 8),
+          const Icon(Icons.directions_run, color: AppColors.accentGreen),
+          const SizedBox(width: 8),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   "Date: ${_formatTimestamp(timestamp)}",
-                  style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   "${totalDistance.toStringAsFixed(2)} km • ${_formatDuration(duration)} • $avgPace min/km",
-                  style: TextStyle(color: AppColors.textPrimary),
+                  style: const TextStyle(color: AppColors.textPrimary),
                 ),
               ],
             ),
           ),
           Text(
             _formatTimeDifference(timestamp),
-            style: TextStyle(color: AppColors.textSecondary),
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
         ],
       ),
@@ -226,21 +222,21 @@ class HomeScreenContent extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (_) => GoalsScreen()),
               ),
-              child: Text('More', style: TextStyle(color: AppColors.accentGreen)),
+              child: const Text('More', style: TextStyle(color: AppColors.accentGreen)),
             ),
           ),
-          Divider(color: AppColors.textSecondary),
+          const Divider(color: AppColors.textSecondary),
           if (goals.isLoading)
-            Center(child: CircularProgressIndicator())
+            const Center(child: CircularProgressIndicator())
           else if (goals.activeGoals.isEmpty)
-            Padding(
+            const Padding(
               padding: EdgeInsets.all(16),
               child: Text('No active goals',
                   style: TextStyle(color: AppColors.textSecondary)),
             )
           else
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: goals.activeGoals
                     .take(2)
@@ -263,11 +259,11 @@ class HomeScreenContent extends StatelessWidget {
         Expanded(
           child: _buildQuickStatCard('This Week', '23.4 km'),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: _buildQuickStatCard('Active Streak', '3 days'),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Expanded(
           child: _buildQuickStatCard('Next Plan', 'Tomorrow'),
         ),
@@ -283,13 +279,14 @@ class HomeScreenContent extends StatelessWidget {
             title: Text('Personal Records',
               style: Theme.of(context).textTheme.titleLarge,
             ),
+
           ),
-          Divider(color: AppColors.textSecondary),
+          const Divider(color: AppColors.textSecondary),
           GridView.count(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             crossAxisCount: 2,
-            padding: EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16),
             children: [
               _buildRecordItem('Longest Run', '15.3 km'),
               _buildRecordItem('Fastest 5K', '25:30'),
@@ -300,18 +297,6 @@ class HomeScreenContent extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  // ... Rest of the widget implementations ...
-
-  String _formatDate(DateTime date) {
-    final now = DateTime.now();
-    final difference = now.difference(date);
-
-    if (difference.inDays == 0) return 'Today';
-    if (difference.inDays == 1) return 'Yesterday';
-    if (difference.inDays < 7) return '${difference.inDays} days ago';
-    return '${date.day}/${date.month}';
   }
 
   String _getUnitForGoalType(GoalType type) {
@@ -333,15 +318,15 @@ class HomeScreenContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textPrimary)),
-        SizedBox(height: 4),
+        Text(label, style: const TextStyle(color: AppColors.textPrimary)),
+        const SizedBox(height: 4),
         LinearProgressIndicator(
           value: progress,
           backgroundColor: AppColors.progressBackground,
           color: AppColors.progressBar,
         ),
-        SizedBox(height: 4),
-        Text(status, style: TextStyle(color: AppColors.textSecondary)),
+        const SizedBox(height: 4),
+        Text(status, style: const TextStyle(color: AppColors.textSecondary)),
       ],
     );
   }
@@ -351,9 +336,9 @@ class HomeScreenContent extends StatelessWidget {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Text(label, style: TextStyle(color: AppColors.textSecondary)),
-        SizedBox(height: 4),
-        Text(value, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+        const SizedBox(height: 4),
+        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -364,13 +349,82 @@ class HomeScreenContent extends StatelessWidget {
     return Card(
       color: AppColors.cardDark,
       child: Padding(
-        padding: EdgeInsets.all(12),
+        padding: const EdgeInsets.all(12),
         child: Column(
           children: [
-            Text(label, style: TextStyle(color: AppColors.textSecondary)),
-            SizedBox(height: 4),
-            Text(value, style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
+
+            const SizedBox(height: 4),
+            Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIntervalTrainingCard(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const IntervalTrainingScreen()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Interval Training',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Improve your speed and endurance with high-intensity interval training sessions.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAchievementsCard(BuildContext context) {
+    return Card(
+      child: InkWell(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AchievementsScreen()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Achievements',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
+                ],
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Unlock achievements and earn rewards for your running milestones.',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       ),
     );

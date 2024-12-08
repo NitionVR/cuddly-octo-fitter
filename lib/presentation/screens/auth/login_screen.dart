@@ -6,6 +6,8 @@ import '../main_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -36,7 +38,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
                 TextFormField(
                   controller: _emailController,
-                  decoration: InputDecoration(
+                  decoration: const InputDecoration(
                     labelText: 'Email',
                     prefixIcon: Icon(Icons.email),
                     border: OutlineInputBorder(),
@@ -57,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordController,
                   decoration: InputDecoration(
                     labelText: 'Password',
-                    prefixIcon: Icon(Icons.lock),
+                    prefixIcon: const Icon(Icons.lock),
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordVisible
@@ -70,7 +72,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                   obscureText: !_isPasswordVisible,
                   validator: (value) {
@@ -84,7 +86,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Consumer<AuthViewModel>(
                   builder: (context, authViewModel, _) {
                     if (authViewModel.isLoading) {
-                      return Center(child: CircularProgressIndicator());
+                      return const Center(child: CircularProgressIndicator());
                     }
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -92,16 +94,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ElevatedButton(
                           onPressed: () => _handleLogin(context),
                           style: ElevatedButton.styleFrom(
-                            padding: EdgeInsets.symmetric(vertical: 16),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
                           ),
-                          child: Text('Login'),
+                          child: const Text('Login'),
                         ),
                         if (authViewModel.error != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 8.0),
                             child: Text(
                               authViewModel.error!,
-                              style: TextStyle(color: Colors.red),
+                              style: const TextStyle(color: Colors.red),
                               textAlign: TextAlign.center,
                             ),
                           ),
@@ -115,11 +117,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     context,
                     MaterialPageRoute(builder: (_) => RegisterScreen()),
                   ),
-                  child: Text('Don\'t have an account? Register'),
+                  child: const Text('Don\'t have an account? Register'),
                 ),
                 TextButton(
                   onPressed: () => _showForgotPasswordDialog(context),
-                  child: Text('Forgot Password?'),
+                  child: const Text('Forgot Password?'),
                 ),
               ],
             ),
@@ -140,7 +142,7 @@ class _LoginScreenState extends State<LoginScreen> {
         if (!mounted) return; // Check if widget is still mounted
 
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => MainScreen()),
+          MaterialPageRoute(builder: (_) => const MainScreen()),
               (route) => false,
         );
       } catch (e) {
@@ -162,10 +164,10 @@ class _LoginScreenState extends State<LoginScreen> {
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Reset Password'),
+        title: const Text('Reset Password'),
         content: TextField(
           controller: emailController,
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             labelText: 'Email',
             border: OutlineInputBorder(),
           ),
@@ -173,7 +175,7 @@ class _LoginScreenState extends State<LoginScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('Cancel'),
+            child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () async {
@@ -183,7 +185,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
+                  const SnackBar(
                     content: Text('Password reset email sent'),
                   ),
                 );
@@ -196,7 +198,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 );
               }
             },
-            child: Text('Send Reset Link'),
+            child: const Text('Send Reset Link'),
           ),
         ],
       ),

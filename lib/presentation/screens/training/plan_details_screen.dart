@@ -1,11 +1,10 @@
-// lib/presentation/screens/training/plan_details_screen.dart
 import 'package:flutter/material.dart';
 import '../../../domain/entities/training/training_plan.dart';
 
 class PlanDetailsScreen extends StatelessWidget {
   final TrainingPlan plan;
 
-  const PlanDetailsScreen({Key? key, required this.plan}) : super(key: key);
+  const PlanDetailsScreen({super.key, required this.plan});
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +28,7 @@ class PlanDetailsScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [

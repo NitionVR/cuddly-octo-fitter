@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../data/datasources/local/database_helper.dart';
 import '../../domain/services/sync_service.dart';
@@ -24,7 +25,7 @@ class FirebaseSyncService implements SyncService {
 
   void _initializeSync() {
     // Set up periodic sync (every 15 minutes)
-    _syncTimer = Timer.periodic(Duration(minutes: 15), (_) => syncAll());
+    _syncTimer = Timer.periodic(const Duration(minutes: 15), (_) => syncAll());
 
     // Initialize connectivity subscription
     final subscription = Connectivity().onConnectivityChanged;
@@ -60,7 +61,9 @@ class FirebaseSyncService implements SyncService {
 
       _syncStatusController.add(SyncStatus.completed);
     } catch (e) {
-      print('Sync error: $e');
+      if (kDebugMode) {
+        print('Sync error: $e');
+      }
       _syncStatusController.add(SyncStatus.error);
     } finally {
       _isSyncing = false;
@@ -109,7 +112,9 @@ class FirebaseSyncService implements SyncService {
           whereArgs: [workout['id']],
         );
       } catch (e) {
-        print('Error syncing workout ${workout['id']}: $e');
+        if (kDebugMode) {
+          print('Error syncing workout ${workout['id']}: $e');
+        }
       }
     }
 
@@ -172,7 +177,9 @@ class FirebaseSyncService implements SyncService {
           whereArgs: [goal['id']],
         );
       } catch (e) {
-        print('Error syncing goal ${goal['id']}: $e');
+        if (kDebugMode) {
+          print('Error syncing goal ${goal['id']}: $e');
+        }
       }
     }
 
@@ -234,7 +241,9 @@ class FirebaseSyncService implements SyncService {
           whereArgs: [achievement['id']],
         );
       } catch (e) {
-        print('Error syncing achievement ${achievement['id']}: $e');
+        if (kDebugMode) {
+          print('Error syncing achievement ${achievement['id']}: $e');
+        }
       }
     }
 
@@ -295,7 +304,9 @@ class FirebaseSyncService implements SyncService {
             );
           }
         } catch (e) {
-          print('Error resolving conflict: $e');
+          if (kDebugMode) {
+            print('Error resolving conflict: $e');
+          }
         }
       }
     }

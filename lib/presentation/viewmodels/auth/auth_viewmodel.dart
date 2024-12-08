@@ -27,7 +27,9 @@ class AuthViewModel extends ChangeNotifier {
         notifyListeners();
       },
       onError: (error) {
-        print('Auth state error: $error');
+        if (kDebugMode) {
+          print('Auth state error: $error');
+        }
         _error = error.toString();
         _isLoading = false;
         notifyListeners();
@@ -37,7 +39,9 @@ class AuthViewModel extends ChangeNotifier {
     try {
       _currentUser = await _authRepository.getCurrentUser();
     } catch (e) {
-      print('Init current user error: $e');
+      if (kDebugMode) {
+        print('Init current user error: $e');
+      }
       _error = e.toString();
     } finally {
       _isLoading = false;
@@ -54,7 +58,9 @@ class AuthViewModel extends ChangeNotifier {
       _currentUser = await _authRepository.signInWithEmail(email, password);
       _error = null;
     } catch (e) {
-      print('Sign in error: $e');
+      if (kDebugMode) {
+        print('Sign in error: $e');
+      }
       _error = e.toString();
       rethrow;
     } finally {
@@ -72,7 +78,9 @@ class AuthViewModel extends ChangeNotifier {
       _currentUser = await _authRepository.signUpWithEmail(email, password);
       _error = null;
     } catch (e) {
-      print('Sign up error: $e');
+      if (kDebugMode) {
+        print('Sign up error: $e');
+      }
       _error = e.toString();
       rethrow;
     } finally {
@@ -90,7 +98,9 @@ class AuthViewModel extends ChangeNotifier {
       await _authRepository.signOut();
       _currentUser = null;
     } catch (e) {
-      print('Sign out error: $e');
+      if (kDebugMode) {
+        print('Sign out error: $e');
+      }
       _error = e.toString();
       rethrow;
     } finally {
@@ -107,7 +117,9 @@ class AuthViewModel extends ChangeNotifier {
     try {
       await _authRepository.resetPassword(email);
     } catch (e) {
-      print('Reset password error: $e');
+      if (kDebugMode) {
+        print('Reset password error: $e');
+      }
       _error = e.toString();
       rethrow;
     } finally {
