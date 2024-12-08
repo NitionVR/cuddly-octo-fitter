@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/goals/fitness_goal.dart';
+import '../../../domain/enums/goal_period.dart';
+import '../../../domain/enums/goal_type.dart';
 import '../../../domain/repository/goals/goals_repository.dart';
 
 class GoalsViewModel extends ChangeNotifier {

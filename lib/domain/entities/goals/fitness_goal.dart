@@ -1,3 +1,6 @@
+import '../../enums/goal_period.dart';
+import '../../enums/goal_type.dart';
+
 class FitnessGoal {
   final String id;
   final String userId;
@@ -95,17 +98,3 @@ class FitnessGoal {
   }
 }
 
-enum GoalType {
-  distance,    // Total distance (km)
-  duration,    // Total time (minutes)
-  frequency,   // Number of workouts
-  calories,    // Calories burned
-  pace        // Target pace (min/km)
-}
-
-enum GoalPeriod {
-  daily,
-  weekly,
-  monthly,
-  custom
-}

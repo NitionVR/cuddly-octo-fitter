@@ -1,3 +1,5 @@
+import '../../enums/difficulty_level.dart';
+import '../../enums/workout_intensity.dart';
 import '../../enums/workout_type.dart';
 
 class TrainingPlan {
@@ -148,17 +150,3 @@ class PlannedWorkout {
   }
 }
 
-enum DifficultyLevel {
-  beginner,
-  intermediate,
-  advanced,
-  expert
-}
-
-enum WorkoutIntensity {
-  recovery,
-  easy,
-  moderate,
-  hard,
-  veryHard
-}

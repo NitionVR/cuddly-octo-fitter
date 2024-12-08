@@ -2,13 +2,13 @@ import 'package:flutter/material.dart';
 
 class AppColors {
   // Base Colors
-  static const Color darkBackground = Color(0xFF121212); // Deep dark background
-  static const Color cardDark = Color(0xFF2A2A2A); // Dark grey for cards
-  static const Color accentGreen = Color(0xFF4CAF50); // Modern green
+  static const Color darkBackground = Color(0xFF121212);
+  static const Color cardDark = Color(0xFF2A2A2A);
+  static const Color accentGreen = Color(0xFF4CAF50);
 
   // Text Colors
   static const Color textPrimary = Colors.white;
-  static const Color textSecondary = Color(0xFFB3B3B3); // Soft grey
+  static const Color textSecondary = Color(0xFFB3B3B3);
 
   // Accent Colors
   static const Color successGreen = Color(0xFF43A047);
@@ -25,7 +25,7 @@ class AppTheme{
   static ThemeData darkTheme = ThemeData.dark().copyWith(
     scaffoldBackgroundColor: AppColors.darkBackground,
     primaryColor: AppColors.accentGreen,
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: AppColors.accentGreen,
       secondary: AppColors.accentGreen,
       surface: AppColors.cardDark,
@@ -39,11 +39,11 @@ class AppTheme{
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),
-      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
     ),
 
     // Text Theme
-    textTheme: TextTheme(
+    textTheme: const TextTheme(
       titleLarge: TextStyle(
         color: AppColors.textPrimary,
         fontSize: 24,
@@ -64,25 +64,25 @@ class AppTheme{
       ),
     ),
 
-    bottomAppBarTheme: BottomAppBarTheme(
+    bottomAppBarTheme: const BottomAppBarTheme(
       color: AppColors.cardDark,
       elevation: 8,
     ),
 
-    progressIndicatorTheme: ProgressIndicatorThemeData(
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: AppColors.progressBar,
       linearTrackColor: AppColors.progressBackground,
     ),
 
     // Button Theme
-    floatingActionButtonTheme: FloatingActionButtonThemeData(
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
       backgroundColor: AppColors.accentGreen,
       foregroundColor: Colors.white,
       elevation: 6,
     ),
 
 
-    iconTheme: IconThemeData(
+    iconTheme: const IconThemeData(
       color: AppColors.textSecondary,
     ),
 

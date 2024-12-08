@@ -101,7 +101,8 @@ class AchievementTemplates {
       id: 'distance_${distanceKm.toInt()}',
       userId: userId,
       title: customTitle ?? '${distanceKm.toInt()}km Club',
-      description: customDescription ?? 'Run a total of ${distanceKm.toInt()}km',
+      description: customDescription ??
+          'Run a total of ${distanceKm.toInt()}km',
       type: AchievementType.totalDistance,
       threshold: distanceKm,
     );
@@ -117,11 +118,11 @@ class AchievementTemplates {
       id: 'streak_$days',
       userId: userId,
       title: customTitle ?? '$days Day Streak',
-      description: customDescription ?? 'Complete workouts for $days consecutive days',
+      description: customDescription ??
+          'Complete workouts for $days consecutive days',
       type: AchievementType.streakDays,
       threshold: days.toDouble(),
     );
   }
 
-// Add more template methods as needed
 }

@@ -6,10 +6,10 @@ import 'package:latlong2/latlong.dart';
 import '../../viewmodels/tracking/map_view_model.dart';
 
 class MapScreen extends StatefulWidget {
+  const MapScreen({super.key});
+
   @override
   _MapScreenState createState() => _MapScreenState();
-
-
 
 }
 
@@ -46,7 +46,7 @@ class _MapScreenState extends State<MapScreen> {
             options: MapOptions(
               center: viewModel.route.isNotEmpty
                   ? viewModel.route.last
-                  : LatLng(0, 0),
+                  : const LatLng(0, 0),
               zoom: 16.0,
               maxZoom: 18.0,
               minZoom: 3.0,
@@ -138,9 +138,9 @@ class _MapScreenState extends State<MapScreen> {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(label, style: TextStyle(fontSize: 14, color: Colors.white70)),
-        SizedBox(height: 2),
-        Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Text(label, style: const TextStyle(fontSize: 14, color: Colors.white70)),
+        const SizedBox(height: 2),
+        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
     );
   }
@@ -168,20 +168,20 @@ class _MapScreenState extends State<MapScreen> {
                   return Container(
                     width: 4,
                     height: 5 + (index * 4), // Progressively taller bars
-                    margin: EdgeInsets.symmetric(horizontal: 1),
+                    margin: const EdgeInsets.symmetric(horizontal: 1),
                     decoration: BoxDecoration(
                       color: isActive ? color : Colors.grey[300],
-                      borderRadius: BorderRadius.vertical(
+                      borderRadius: const BorderRadius.vertical(
                         top: Radius.circular(1),
                       ),
                     ),
                   );
-                }).toList(), // Reverse to show shorter bars first
+                }).toList(),
               ),
             ),
-            SizedBox(width: 6),
+            const SizedBox(width: 6),
             Text(
-              '${viewModel.gpsAccuracy}m',
+              'GPS',
               style: TextStyle(
                 fontSize: 12,
                 color: color,
@@ -204,7 +204,7 @@ class _MapScreenState extends State<MapScreen> {
 
   Color _getGpsColor(int accuracy) {
     if (accuracy <= 5) return Colors.green;       // Excellent
-    if (accuracy <= 10) return Color(0xFF90EE90); // Light green
+    if (accuracy <= 10) return const Color(0xFF90EE90); // Light green
     if (accuracy <= 20) return Colors.orange;     // Fair
     if (accuracy <= 30) return Colors.deepOrange; // Poor
     return Colors.red;                           // Very poor
@@ -216,11 +216,11 @@ class _MapScreenState extends State<MapScreen> {
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Run Paused'),
-          content: Text('What would you like to do?'),
+          title: const Text('Run Paused'),
+          content: const Text('What would you like to do?'),
           actions: [
             TextButton(
-              child: Text('Continue Run'),
+              child: const Text('Continue Run'),
               onPressed: () {
                 viewModel.resumeTracking();
                 Navigator.of(context).pop();
@@ -230,7 +230,7 @@ class _MapScreenState extends State<MapScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.red,
               ),
-              child: Text('End Run'),
+              child: const Text('End Run'),
               onPressed: () {
                 viewModel.endTracking();
                 Navigator.of(context).pop();

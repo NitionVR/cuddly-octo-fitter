@@ -34,6 +34,7 @@ class TrackingLocalDataSource {
         'total_distance': totalDistance,
         'duration': duration,
         'avg_pace': avgPace,
+        'last_sync': DateTime.now().toIso8601String(),
       },
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -143,5 +144,52 @@ class TrackingLocalDataSource {
   Future<String> exportTrackingHistoryToJson(String userId) async {
     final history = await getTrackingHistory(userId: userId, limit: 100);
     return jsonEncode(history);
+  }
+
+  Future<List<Map<String, dynamic>>> getUnsyncedRecords(String userId) async {
+    final db = await _databaseHelper.database;
+
+    return await db.query(
+      'tracking_history',
+      where: 'user_id = ? AND last_sync IS NULL',
+      whereArgs: [userId],
+    );
+  }
+
+  Future<void> updateSyncStatus({
+    required int id,
+    required String userId,
+    required DateTime syncTime,
+  }) async {
+    final db = await _databaseHelper.database;
+
+    await db.update(
+      'tracking_history',
+      {'last_sync': syncTime.toIso8601String()},
+      where: 'id = ? AND user_id = ?',
+      whereArgs: [id, userId],
+    );
+  }
+
+  Future<void> mergeFirestoreData(
+      String userId,
+      List<Map<String, dynamic>> firestoreData,
+      ) async {
+    final db = await _databaseHelper.database;
+
+    await db.transaction((txn) async {
+      for (var record in firestoreData) {
+        // Check if record exists
+        final exists = await txn.query(
+          'tracking_history',
+          where: 'id = ? AND user_id = ?',
+          whereArgs: [record['id'], userId],
+        );
+
+        if (exists.isEmpty) {
+          await txn.insert('tracking_history', record);
+        }
+      }
+    });
   }
 }

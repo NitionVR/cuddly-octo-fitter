@@ -3,11 +3,13 @@ import 'package:latlong2/latlong.dart';
 import '../../../data/datasources/local/tracking_local_data_source.dart';
 import '../../../data/models/running_stats.dart';
 import '../../../data/models/weekly_summary.dart';
+import '../../services/firestore_tracking_service.dart';
 
 class TrackingRepository {
   final TrackingLocalDataSource localDataSource;
+  final FirestoreTrackingService firestoreService;
 
-  TrackingRepository(this.localDataSource);
+  TrackingRepository(this.localDataSource,this.firestoreService);
 
   Future<void> saveTrackingData({
     required String userId,
@@ -116,6 +118,40 @@ class TrackingRepository {
         print('Error exporting tracking history: $e');
       }
       return '[]';
+    }
+  }
+
+  Future<void> syncWithFirestore(String userId) async {
+    try {
+      // Get unsynced records
+      final unsyncedRecords = await localDataSource.getUnsyncedRecords(userId);
+
+      for (var record in unsyncedRecords) {
+        await firestoreService.syncTrackingHistory(
+          userId: userId,
+          trackingData: record,
+        );
+
+        // Update local sync status
+        await localDataSource.updateSyncStatus(
+          id: record['id'],
+          userId: userId,
+          syncTime: DateTime.now(),
+        );
+      }
+    } catch (e) {
+      print('Error during sync: $e');
+      throw e;
+    }
+  }
+
+  Future<void> mergeFirestoreData(String userId) async {
+    try {
+      final firestoreData = await firestoreService.fetchFirestoreHistory(userId);
+      await localDataSource.mergeFirestoreData(userId, firestoreData);
+    } catch (e) {
+      print('Error merging Firestore data: $e');
+      throw e;
     }
   }
 

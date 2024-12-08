@@ -5,9 +5,9 @@ import 'package:path/path.dart';
 
 class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
-  static Database? _database;
 
-  static const int _currentVersion = 4;
+  static Database? _database;
+  static const int _currentVersion = 5;
   static const String _databaseName = 'tracking_history.db';
 
   factory DatabaseHelper() => _instance;
@@ -42,7 +42,7 @@ class DatabaseHelper {
       await db.execute('''
       CREATE TABLE tracking_history (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        last_sync TEXT NOT NULL,
+        last_sync TEXT,
         user_id TEXT NOT NULL,
         timestamp TEXT NOT NULL,
         route TEXT NOT NULL,
@@ -142,6 +142,17 @@ class DatabaseHelper {
           FOREIGN KEY (userId) REFERENCES users(id)
         )
       ''');
+      }
+
+      if (oldVersion < 5) {
+        // drop the last_sync column if it exists
+        try {
+          await db.execute('ALTER TABLE tracking_history DROP COLUMN last_sync');
+        } catch (e) {
+          // ignore if column not exists
+        }
+        // Add it back as nullable
+        await db.execute('ALTER TABLE tracking_history ADD COLUMN last_sync TEXT');
       }
     } catch (e) {
       if (kDebugMode) {

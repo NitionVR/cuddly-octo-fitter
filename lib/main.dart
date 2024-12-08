@@ -17,6 +17,7 @@ import 'domain/repository/firebase_achievements_repository.dart';
 import 'domain/repository/goals/firebase_goals_repository.dart';
 import 'domain/repository/goals/goals_repository.dart';
 import 'domain/repository/training/firebase_training_plan_repository.dart';
+import 'domain/services/firestore_tracking_service.dart';
 import 'firebase_options.dart';
 import 'domain/repository/tracking/tracking_repository.dart';
 import 'domain/repository/auth/auth_repository.dart';
@@ -86,8 +87,14 @@ void main() async {
 
 
         // Repository
-        ProxyProvider<TrackingLocalDataSource, TrackingRepository>(
-          update: (_, localDataSource, __) => TrackingRepository(localDataSource),
+        Provider<FirestoreTrackingService>(
+          create: (_) => FirestoreTrackingService(),
+          lazy: false,
+        ),
+
+        ProxyProvider2<TrackingLocalDataSource, FirestoreTrackingService, TrackingRepository>(
+          update: (_, localDataSource, firestoreService, __) =>
+              TrackingRepository(localDataSource, firestoreService),
         ),
 
         // Use cases

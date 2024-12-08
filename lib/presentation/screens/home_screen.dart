@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/domain/repository/achievements_repository.dart';
 import 'package:provider/provider.dart';
+import '../../data/models/personal_record.dart';
 import '../../domain/entities/goals/fitness_goal.dart';
+import '../../domain/enums/goal_type.dart';
 import '../../domain/repository/goals/goals_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
 import '../../theme/app_theme.dart';
@@ -56,6 +58,7 @@ class HomeScreen extends StatelessWidget {
 
 class HomeScreenContent extends StatelessWidget {
   const HomeScreenContent({super.key});
+
 
   @override
   Widget build(BuildContext context) {
@@ -272,6 +275,16 @@ class HomeScreenContent extends StatelessWidget {
   }
 
   Widget _buildPersonalRecordsCard(BuildContext context) {
+    final analytics = context.watch<AnalyticsViewModel>();
+    print(analytics);
+    final records = analytics.personalRecords;
+
+    if (analytics.isLoading) {
+      return const Card(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Card(
       child: Column(
         children: [
@@ -279,21 +292,73 @@ class HomeScreenContent extends StatelessWidget {
             title: Text('Personal Records',
               style: Theme.of(context).textTheme.titleLarge,
             ),
-
           ),
           const Divider(color: AppColors.textSecondary),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            padding: const EdgeInsets.all(16),
-            children: [
-              _buildRecordItem('Longest Run', '15.3 km'),
-              _buildRecordItem('Fastest 5K', '25:30'),
-              _buildRecordItem('Longest Streak', '7 days'),
-              _buildRecordItem('Best Pace', '5:30/km'),
-            ],
-          ),
+          if (records.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text('No records yet',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            )
+          else
+            GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(16),
+              children: [
+                // Find specific records
+                _buildRecordItem(
+                  'Longest Run',
+                  records.firstWhere(
+                        (r) => r.category == 'Longest Run',
+                    orElse: () => PersonalRecord(
+                      category: 'Longest Run',
+                      value: 0,
+                      displayValue: '0.0 km',
+                      achievedDate: DateTime.now(),
+                    ),
+                  ).displayValue,
+                ),
+                _buildRecordItem(
+                  'Best Pace',
+                  records.firstWhere(
+                        (r) => r.category == 'Fastest Pace',
+                    orElse: () => PersonalRecord(
+                      category: 'Fastest Pace',
+                      value: 0,
+                      displayValue: '0:00 /km',
+                      achievedDate: DateTime.now(),
+                    ),
+                  ).displayValue,
+                ),
+                _buildRecordItem(
+                  'Longest Duration',
+                  records.firstWhere(
+                        (r) => r.category == 'Longest Duration',
+                    orElse: () => PersonalRecord(
+                      category: 'Longest Duration',
+                      value: 0,
+                      displayValue: '0h 0m',
+                      achievedDate: DateTime.now(),
+                    ),
+                  ).displayValue,
+                ),
+                _buildRecordItem(
+                  'Most Distance (Week)',
+                  records.firstWhere(
+                        (r) => r.category == 'Weekly Distance',
+                    orElse: () => PersonalRecord(
+                      category: 'Weekly Distance',
+                      value: 0,
+                      displayValue: '0.0 km',
+                      achievedDate: DateTime.now(),
+                    ),
+                  ).displayValue,
+                ),
+              ],
+            ),
         ],
       ),
     );

@@ -217,7 +217,7 @@ class MapViewModel extends ChangeNotifier {
     _gpsAccuracy = routePoint.accuracy.round();
 
     // Only filter very poor accuracy points
-    if (routePoint.accuracy > 50) { // note this is an experiment value
+    if (routePoint.accuracy > 1300) { // note this is an experiment value
       print("Skipping point due to poor accuracy: ${routePoint.accuracy}m");
       return;
     }
@@ -272,7 +272,7 @@ class MapViewModel extends ChangeNotifier {
           width: 40.0,
           height: 40.0,
           point: routePoint.position,
-          builder: (ctx) => Icon(
+          builder: (ctx) => const Icon(
             Icons.navigation,
             color: Colors.red,
             size: 20.0,

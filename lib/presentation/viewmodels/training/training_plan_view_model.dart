@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/training/training_plan.dart';
+import '../../../domain/enums/difficulty_level.dart';
 import '../../../domain/enums/workout_type.dart';
 import '../../../domain/repository/training/training_plan_repository.dart';
 

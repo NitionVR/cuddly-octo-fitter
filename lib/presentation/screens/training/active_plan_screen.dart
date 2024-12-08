@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/training/training_plan.dart';
+import '../../../domain/enums/workout_intensity.dart';
 
 
 class ActivePlanScreen extends StatelessWidget {

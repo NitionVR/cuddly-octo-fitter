@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../domain/enums/goal_period.dart';
+import '../../../domain/enums/goal_type.dart';
 import '../../viewmodels/goals/goals_view_model.dart';
 import '../../../domain/entities/goals/fitness_goal.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
