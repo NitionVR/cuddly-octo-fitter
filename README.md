@@ -9,7 +9,7 @@ CircuitVerse for mobile is a cross platform application built in [flutter](https
 
 ## Getting Started
 
-Follow these instructions to build and run the project
+Follow these instructions to build and run the project.
 
 ### Setup Flutter
 
