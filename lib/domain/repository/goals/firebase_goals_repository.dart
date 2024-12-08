@@ -1,4 +1,3 @@
-// lib/data/repositories/firebase_goals_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:sqflite/sqflite.dart';
 import '../../../data/datasources/local/database_helper.dart';
@@ -92,7 +91,7 @@ class FirebaseGoalsRepository implements GoalsRepository {
   Future<List<FitnessGoal>> _getLocalGoals(String userId) async {
     final db = await _databaseHelper.database;
     final goals = await db.query(
-      'goals',
+      'fitness_goals',
       where: 'userId = ? AND isActive = ?',
       whereArgs: [userId, 1],
     );
@@ -102,8 +101,9 @@ class FirebaseGoalsRepository implements GoalsRepository {
 
   Future<void> _saveGoalLocally(FitnessGoal goal) async {
     final db = await _databaseHelper.database;
+
     await db.insert(
-      'goals',
+      'fitness_goals',
       goal.toMap(),
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
@@ -118,7 +118,7 @@ class FirebaseGoalsRepository implements GoalsRepository {
       // Delete from local database
       final db = await _databaseHelper.database;
       await db.delete(
-        'goals',
+        'fitness_goals',
         where: 'id = ?',
         whereArgs: [goalId],
       );

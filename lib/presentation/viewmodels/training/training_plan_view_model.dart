@@ -1,4 +1,3 @@
-// lib/presentation/viewmodels/training_plan_view_model.dart
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/training/training_plan.dart';
 import '../../../domain/enums/workout_type.dart';

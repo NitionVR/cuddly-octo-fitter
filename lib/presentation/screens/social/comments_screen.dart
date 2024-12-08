@@ -1,4 +1,3 @@
-// // lib/presentation/widgets/social/comments_screen.dart
 // import 'package:flutter/material.dart';
 // import '../../../domain/entities/social/shared_workout.dart';
 // import '../../../domain/entities/social/comment.dart';

@@ -5,11 +5,16 @@ import 'package:mobile_project_fitquest/presentation/screens/home_screen.dart';
 import 'package:mobile_project_fitquest/presentation/screens/auth/login_screen.dart';
 import 'package:mobile_project_fitquest/presentation/screens/main_screen.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/auth/auth_viewmodel.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/goals/goals_view_model.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/training/training_plan_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart';
 
+import 'domain/repository/achievements_repository.dart';
 import 'domain/repository/auth/firebase_auth_repository.dart';
+import 'domain/repository/firebase_achievements_repository.dart';
+import 'domain/repository/goals/firebase_goals_repository.dart';
+import 'domain/repository/goals/goals_repository.dart';
 import 'domain/repository/training/firebase_training_plan_repository.dart';
 import 'firebase_options.dart';
 import 'domain/repository/tracking/tracking_repository.dart';
@@ -56,6 +61,24 @@ void main() async {
             context.read<AuthRepository>(),
           ),
         ),
+
+        // Goals
+        Provider<GoalsRepository>(
+          create: (_) => FirebaseGoalsRepository(),
+          lazy: false,
+        ),
+        ChangeNotifierProvider<GoalsViewModel>(
+          create: (context) => GoalsViewModel(
+            context.read<GoalsRepository>(),context.read<AuthViewModel>().currentUser!.id,
+          ),
+        ),
+
+        Provider<AchievementsRepository>(
+          create: (_) => FirebaseAchievementsRepository(),
+          lazy: false,
+        ),
+
+
 
         // Repository
         ProxyProvider<TrackingLocalDataSource, TrackingRepository>(

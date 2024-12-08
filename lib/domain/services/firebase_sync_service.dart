@@ -1,4 +1,3 @@
-// lib/data/services/firebase_sync_service.dart
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';

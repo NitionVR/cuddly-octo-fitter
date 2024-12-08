@@ -1,4 +1,3 @@
-// lib/viewmodels/analytics_view_model.dart
 import 'package:flutter/foundation.dart';
 import '../../data/models/personal_record.dart';
 import '../../data/models/running_stats.dart';

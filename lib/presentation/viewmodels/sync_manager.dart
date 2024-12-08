@@ -1,4 +1,3 @@
-// lib/presentation/viewmodels/sync_manager.dart
 import 'package:flutter/foundation.dart';
 import '../../domain/services/sync_service.dart';
 

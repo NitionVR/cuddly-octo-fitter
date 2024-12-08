@@ -1,4 +1,3 @@
-// lib/domain/services/sync_service.dart
 abstract class SyncService {
   Future<void> syncWorkouts();
   Future<void> syncGoals();

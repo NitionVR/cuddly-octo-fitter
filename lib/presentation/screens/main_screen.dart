@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../domain/repository/achievements_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
+import '../../domain/repository/goals/goals_repository.dart';
 import '../viewmodels/auth/auth_viewmodel.dart';
 import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/analytics_view_model.dart';
@@ -27,30 +29,46 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Access repositories from the root provider
+    final trackingRepository = Provider.of<TrackingRepository>(context);
+    final goalsRepository = Provider.of<GoalsRepository>(context);
+    final achievementsRepository = Provider.of<AchievementsRepository>(context);
+
     return Theme(
       data: AppTheme.darkTheme,
       child: Scaffold(
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            HomeScreen(),           // Home dashboard with cards
-            AnalyticsScreen(),      // Analytics view
-            MapScreen(),            // Run tracking screen
-            TrainingPlansScreen(),  // Training plans
-            SettingsScreen(),       // Profile/Settings
+            // Inject repositories into HomeScreen
+            HomeScreen(
+              trackingRepository: trackingRepository,
+              goalsRepository: goalsRepository,
+              achievementsRepository: achievementsRepository,
+            ),
+            TrainingPlansScreen(),
+            MapScreen(),
+            AnalyticsScreen(),
+            SettingsScreen(),
           ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
-        floatingActionButton: _currentIndex == 2 ? null : FloatingActionButton.extended(
-          onPressed: () {
-            setState(() => _currentIndex = 2);  // Switch to MapScreen
-          },
-          icon: Icon(Icons.play_arrow),
-          label: Text('START RUN'),
-          backgroundColor: Theme.of(context).primaryColor,
-        ),
+        floatingActionButton: _buildFloatingActionButton(),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       ),
+    );
+  }
+
+  Widget? _buildFloatingActionButton() {
+    if (_currentIndex == 2) return null;
+
+    return FloatingActionButton.extended(
+      onPressed: () {
+        setState(() => _currentIndex = 2);  // Switch to MapScreen
+      },
+      icon: Icon(Icons.play_arrow),
+      label: Text('START RUN'),
+      backgroundColor: Theme.of(context).primaryColor,
     );
   }
 
@@ -64,9 +82,9 @@ class _MainScreenState extends State<MainScreen> {
         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
         children: [
           _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-          _buildNavItem(1, Icons.analytics_outlined, Icons.analytics, 'Analytics'),
+          _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Plan'),
           SizedBox(width: 80), // Space for FAB
-          _buildNavItem(3, Icons.calendar_today_outlined, Icons.calendar_today, 'Plan'),
+          _buildNavItem(3, Icons.analytics_outlined, Icons.analytics, 'Analytics'),
           _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
         ],
       ),

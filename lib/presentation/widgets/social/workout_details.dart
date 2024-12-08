@@ -1,4 +1,3 @@
-// // lib/presentation/widgets/social/workout_details.dart
 // import 'package:flutter/material.dart';
 //
 // class WorkoutDetails extends StatelessWidget {

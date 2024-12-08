@@ -8,6 +8,9 @@ import '../../viewmodels/tracking/map_view_model.dart';
 class MapScreen extends StatefulWidget {
   @override
   _MapScreenState createState() => _MapScreenState();
+
+
+
 }
 
 class _MapScreenState extends State<MapScreen> {
@@ -104,16 +107,24 @@ class _MapScreenState extends State<MapScreen> {
             left: 20,
             right: 20,
             child: ElevatedButton(
-              onPressed: () => viewModel.toggleTracking(),
+              onPressed: () {
+                if (viewModel.isTracking && !viewModel.isPaused) {
+                  // If tracking is active and not paused, show pause dialog
+                  _showPauseDialog(context, viewModel);
+                } else {
+                  // Otherwise just toggle tracking
+                  viewModel.toggleTracking();
+                }
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: viewModel.isTracking ? Colors.red : Colors.green,
+                backgroundColor: _getTrackingButtonColor(viewModel),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: Text(
-                viewModel.isTracking ? 'Stop Tracking' : 'Start Tracking',
+                _getTrackingButtonText(viewModel),
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -197,5 +208,49 @@ class _MapScreenState extends State<MapScreen> {
     if (accuracy <= 20) return Colors.orange;     // Fair
     if (accuracy <= 30) return Colors.deepOrange; // Poor
     return Colors.red;                           // Very poor
+  }
+
+  void _showPauseDialog(BuildContext context, MapViewModel viewModel) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Run Paused'),
+          content: Text('What would you like to do?'),
+          actions: [
+            TextButton(
+              child: Text('Continue Run'),
+              onPressed: () {
+                viewModel.resumeTracking();
+                Navigator.of(context).pop();
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: Text('End Run'),
+              onPressed: () {
+                viewModel.endTracking();
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _getTrackingButtonText(MapViewModel viewModel) {
+    if (!viewModel.isTracking) return 'Start Tracking';
+    if (viewModel.isPaused) return 'Resume Tracking';
+    return 'Pause Tracking';
+  }
+
+  Color _getTrackingButtonColor(MapViewModel viewModel) {
+    if (!viewModel.isTracking) return Colors.green;
+    if (viewModel.isPaused) return Colors.orange;
+    return Colors.red;
   }
 }

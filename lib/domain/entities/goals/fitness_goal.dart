@@ -1,4 +1,3 @@
-// lib/domain/entities/fitness_goal.dart
 class FitnessGoal {
   final String id;
   final String userId;

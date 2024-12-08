@@ -42,8 +42,8 @@ class HistoryScreen extends StatelessWidget {
                 final item = viewModel.history[index];
                 final timestamp = item['timestamp'];
                 final duration = item['duration'];
-                final totalDistance = item['totalDistance'] ?? 0.0; // Handle null totalDistance
-                final avgPace = item['avgPace'];
+                final totalDistance = item['total_distance'] ?? 0.0; // Handle null totalDistance
+                final avgPace = item['avg_pace'];
                 final route = item['route'] as List<LatLng>;
 
                 return Card(

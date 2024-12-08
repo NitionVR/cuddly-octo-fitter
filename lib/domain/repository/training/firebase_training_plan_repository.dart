@@ -1,4 +1,3 @@
-// lib/data/repositories/training/firebase_training_plan_repository.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mobile_project_fitquest/domain/repository/training/training_plan_repository.dart';
 import 'package:sqflite/sqflite.dart';

@@ -1,4 +1,3 @@
-// lib/presentation/viewmodels/goals_view_model.dart
 import 'package:flutter/foundation.dart';
 import '../../../domain/entities/goals/fitness_goal.dart';
 import '../../../domain/repository/goals/goals_repository.dart';

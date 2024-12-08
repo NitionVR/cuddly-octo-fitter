@@ -1,63 +1,66 @@
-// lib/presentation/screens/goals_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/goals/goals_view_model.dart';
 import '../../../domain/entities/goals/fitness_goal.dart';
+import 'package:mobile_project_fitquest/theme/app_theme.dart';
 
 class GoalsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Fitness Goals'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.add),
-            onPressed: () => _showCreateGoalDialog(context),
-          ),
-        ],
-      ),
-      body: Consumer<GoalsViewModel>(
-        builder: (context, viewModel, child) {
-          if (viewModel.isLoading) {
-            return Center(child: CircularProgressIndicator());
-          }
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Fitness Goals', style: TextStyle(color: AppColors.textPrimary)),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.add, color: AppColors.textSecondary),
+              onPressed: () => _showCreateGoalDialog(context),
+            ),
+          ],
+        ),
+        body: Consumer<GoalsViewModel>(
+          builder: (context, viewModel, child) {
+            if (viewModel.isLoading) {
+              return Center(child: CircularProgressIndicator());
+            }
 
-          if (viewModel.error != null) {
-            return Center(
-              child: Text(viewModel.error!, style: TextStyle(color: Colors.red)),
+            if (viewModel.error != null) {
+              return Center(
+                child: Text(viewModel.error!, style: TextStyle(color: AppColors.errorRed)),
+              );
+            }
+
+            if (viewModel.activeGoals.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.flag, size: 64, color: AppColors.textSecondary),
+                    SizedBox(height: 16),
+                    Text(
+                      'No active goals',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    SizedBox(height: 8),
+                    ElevatedButton(
+                      onPressed: () => _showCreateGoalDialog(context),
+                      child: Text('Create a Goal'),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              itemCount: viewModel.activeGoals.length,
+              itemBuilder: (context, index) {
+                final goal = viewModel.activeGoals[index];
+                return _GoalCard(goal: goal);
+              },
             );
-          }
-
-          if (viewModel.activeGoals.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.flag, size: 64, color: Colors.grey),
-                  SizedBox(height: 16),
-                  Text(
-                    'No active goals',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: () => _showCreateGoalDialog(context),
-                    child: Text('Create a Goal'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          return ListView.builder(
-            itemCount: viewModel.activeGoals.length,
-            itemBuilder: (context, index) {
-              final goal = viewModel.activeGoals[index];
-              return _GoalCard(goal: goal);
-            },
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -78,6 +81,7 @@ class _GoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: AppColors.cardDark,
       margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Padding(
         padding: EdgeInsets.all(16),
@@ -92,7 +96,7 @@ class _GoalCard extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 IconButton(
-                  icon: Icon(Icons.more_vert),
+                  icon: Icon(Icons.more_vert, color: AppColors.textSecondary),
                   onPressed: () => _showGoalOptions(context),
                 ),
               ],
@@ -100,9 +104,9 @@ class _GoalCard extends StatelessWidget {
             SizedBox(height: 8),
             LinearProgressIndicator(
               value: goal.progressPercentage / 100,
-              backgroundColor: Colors.grey[200],
+              backgroundColor: AppColors.progressBackground,
               valueColor: AlwaysStoppedAnimation<Color>(
-                goal.isCompleted ? Colors.green : Theme.of(context).primaryColor,
+                goal.isCompleted ? AppColors.successGreen : AppColors.accentGreen,
               ),
             ),
             SizedBox(height: 8),
@@ -114,7 +118,7 @@ class _GoalCard extends StatelessWidget {
             Text(
               _getGoalPeriodText(),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Colors.grey[600],
+                color: AppColors.textSecondary,
               ),
             ),
           ],
@@ -146,20 +150,21 @@ class _GoalCard extends StatelessWidget {
   void _showGoalOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppColors.cardDark,
       builder: (context) => Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           ListTile(
-            leading: Icon(Icons.edit),
-            title: Text('Edit Goal'),
+            leading: Icon(Icons.edit, color: AppColors.textSecondary),
+            title: Text('Edit Goal', style: TextStyle(color: AppColors.textPrimary)),
             onTap: () {
               Navigator.pop(context);
               // TODO: Show edit dialog
             },
           ),
           ListTile(
-            leading: Icon(Icons.delete, color: Colors.red),
-            title: Text('Delete Goal', style: TextStyle(color: Colors.red)),
+            leading: Icon(Icons.delete, color: AppColors.errorRed),
+            title: Text('Delete Goal', style: TextStyle(color: AppColors.errorRed)),
             onTap: () {
               Navigator.pop(context);
               _confirmDelete(context);
@@ -174,15 +179,16 @@ class _GoalCard extends StatelessWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete Goal'),
-        content: Text('Are you sure you want to delete this goal?'),
+        backgroundColor: AppColors.cardDark,
+        title: Text('Delete Goal', style: TextStyle(color: AppColors.textPrimary)),
+        content: Text('Are you sure you want to delete this goal?', style: TextStyle(color: AppColors.textPrimary)),
         actions: [
           TextButton(
-            child: Text('Cancel'),
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
-            child: Text('Delete', style: TextStyle(color: Colors.red)),
+            child: Text('Delete', style: TextStyle(color: AppColors.errorRed)),
             onPressed: () {
               context.read<GoalsViewModel>().deleteGoal(goal.id);
               Navigator.pop(context);
@@ -208,66 +214,87 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Create New Goal'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropdownButtonFormField<GoalType>(
-              value: _selectedType,
-              items: GoalType.values.map((type) {
-                return DropdownMenuItem(
-                  value: type,
-                  child: Text(type.toString().split('.').last),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedType = value!;
-                });
-              },
-              decoration: InputDecoration(labelText: 'Goal Type'),
-            ),
-            SizedBox(height: 16),
-            TextFormField(
-              controller: _targetController,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'Target',
-                suffixText: _getTargetSuffix(),
+    return Theme(
+      data: AppTheme.darkTheme,
+      child: AlertDialog(
+        backgroundColor: AppColors.cardDark,
+        title: Text('Create New Goal', style: TextStyle(color: AppColors.textPrimary)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<GoalType>(
+                value: _selectedType,
+                items: GoalType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type.toString().split('.').last, style: TextStyle(color: AppColors.textPrimary)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedType = value!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Goal Type',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.accentGreen),
+                  ),
+                ),
               ),
-            ),
-            SizedBox(height: 16),
-            DropdownButtonFormField<GoalPeriod>(
-              value: _selectedPeriod,
-              items: GoalPeriod.values.map((period) {
-                return DropdownMenuItem(
-                  value: period,
-                  child: Text(period.toString().split('.').last),
-                );
-              }).toList(),
-              onChanged: (value) {
-                setState(() {
-                  _selectedPeriod = value!;
-                  _updateDates();
-                });
-              },
-              decoration: InputDecoration(labelText: 'Period'),
-            ),
-          ],
+              SizedBox(height: 16),
+              TextFormField(
+                controller: _targetController,
+                keyboardType: TextInputType.number,
+                style: TextStyle(color: AppColors.textPrimary),
+                decoration: InputDecoration(
+                  labelText: 'Target',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  suffixText: _getTargetSuffix(),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.accentGreen),
+                  ),
+                ),
+              ),
+              SizedBox(height: 16),
+              DropdownButtonFormField<GoalPeriod>(
+                value: _selectedPeriod,
+                items: GoalPeriod.values.map((period) {
+                  return DropdownMenuItem(
+                    value: period,
+                    child: Text(period.toString().split('.').last, style: TextStyle(color: AppColors.textPrimary)),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedPeriod = value!;
+                    _updateDates();
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: 'Period',
+                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.accentGreen),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
+        actions: [
+          TextButton(
+            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            onPressed: () => Navigator.pop(context),
+          ),
+          ElevatedButton(
+            child: Text('Create'),
+            onPressed: () => _createGoal(context),
+          ),
+        ],
       ),
-      actions: [
-        TextButton(
-          child: Text('Cancel'),
-          onPressed: () => Navigator.pop(context),
-        ),
-        ElevatedButton(
-          child: Text('Create'),
-          onPressed: () => _createGoal(context),
-        ),
-      ],
     );
   }
 
@@ -307,7 +334,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   void _createGoal(BuildContext context) {
     if (_targetController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a target value')),
+        SnackBar(content: Text('Please enter a target value', style: TextStyle(color: AppColors.textPrimary))),
       );
       return;
     }
@@ -324,7 +351,9 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Invalid target value')),
+        SnackBar(
+          content: Text('Invalid target value', style: TextStyle(color: AppColors.textPrimary)),
+        ),
       );
     }
   }

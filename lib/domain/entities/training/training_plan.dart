@@ -1,4 +1,3 @@
-
 import '../../enums/workout_type.dart';
 
 class TrainingPlan {

@@ -30,6 +30,8 @@ class MapViewModel extends ChangeNotifier {
   bool _isReplaying = false;
   bool _showGpsSignal = true;
   int _gpsAccuracy = 0;
+  bool _isPaused = false;
+
 
   MapViewModel(
       this._locationTrackingUseCase,
@@ -49,6 +51,7 @@ class MapViewModel extends ChangeNotifier {
   double get totalDistance => _totalDistance;
   String get pace => _pace;
   bool get isTracking => _isTracking;
+  bool get isActivelyTracking => _isTracking && !_isPaused;
 
   get mapController => _mapController;
   get polylines => _polylines;
@@ -60,6 +63,8 @@ class MapViewModel extends ChangeNotifier {
   bool get showGpsSignal => _showGpsSignal;
 
   int get gpsAccuracy => _gpsAccuracy;
+
+  bool get isPaused => _isPaused;
 
   set route(List<LatLng> value) {
     _route = value;
@@ -118,30 +123,45 @@ class MapViewModel extends ChangeNotifier {
   }
 
   void toggleTracking() {
-    _isTracking = !_isTracking;
-    notifyListeners();
-
-    if (_isTracking) {
+    if (!_isTracking) {
+      // Start new tracking session
+      _isTracking = true;
+      _isPaused = false;
       _startTracking();
     } else {
-      _stopTracking();
+      // If tracking is active, pause it
+      pauseTracking();
     }
+    notifyListeners();
   }
+
 
   void _startTracking() {
     _startTime = DateTime.now();
     _totalDistance = 0.0;
     _route.clear();
 
+    _timer?.cancel();  // Cancel any existing timer
     _timer = Timer.periodic(
       const Duration(seconds: 1),
           (_) {
-        notifyListeners();
+        if (_isTracking) {  // Only notify if still tracking
+          notifyListeners();
+        }
       },
     );
 
     // Start location tracking using LocationTrackingUseCase stream
     _locationSubscription = _locationTrackingUseCase.startTracking().listen(_updateUserLocation);
+  }
+
+  void endTracking() {
+    if (!_isTracking) return;
+
+    _stopTracking();
+    _isTracking = false;
+    _isPaused = false;
+    notifyListeners();
   }
 
   void _stopTracking() {
@@ -151,6 +171,32 @@ class MapViewModel extends ChangeNotifier {
 
     _timer?.cancel();
     _timer = null;
+    notifyListeners();
+  }
+
+  void pauseTracking() {
+    if (!_isTracking || _isPaused) return;
+
+    _isPaused = true;
+    _locationSubscription?.pause();
+    _timer?.cancel();
+    notifyListeners();
+  }
+
+  // New method to resume tracking
+  void resumeTracking() {
+    if (!_isTracking || !_isPaused) return;
+
+    _isPaused = false;
+    _locationSubscription?.resume();
+    _timer = Timer.periodic(
+      const Duration(seconds: 1),
+          (_) {
+        if (isActivelyTracking) {
+          notifyListeners();
+        }
+      },
+    );
     notifyListeners();
   }
 
@@ -168,76 +214,109 @@ class MapViewModel extends ChangeNotifier {
   }
 
   void _updateUserLocation(RoutePoint routePoint) {
-    print("Received location with accuracy: ${routePoint.position.latitude}, ${routePoint.position.longitude}");
+    _gpsAccuracy = routePoint.accuracy.round();
 
-    // Define acceptable accuracy based on route length
-    double acceptableAccuracy = _route.isEmpty ? 30.0 : 20.0;
-
-    // Check if the location accuracy is above the acceptable threshold
-    if (routePoint.accuracy > acceptableAccuracy) {
-      print("Skipping location due to poor accuracy: ${routePoint.accuracy}");
+    // Only filter very poor accuracy points
+    if (routePoint.accuracy > 50) { // note this is an experiment value
+      print("Skipping point due to poor accuracy: ${routePoint.accuracy}m");
       return;
     }
 
-    _gpsAccuracy = routePoint.accuracy.round();
-    // Add the new route point
-    _route.add(routePoint.position);
-
-    double distance = 0.0;
-
-    if (_route.length > 1) {
-      final lastPoint = _route[_route.length - 2];
-      distance = Distance().as(
+    if (_route.isNotEmpty) {
+      final lastPoint = _route.last;
+      final distance = Distance().as(
         LengthUnit.Meter,
         lastPoint,
         routePoint.position,
       );
 
-      // Skip small distances (less than 2 meters)
-      if (distance < 2) return;
+      // Filter out obviously erroneous points
+      if (distance > 100.0) {  // Allow larger movements but filter extreme jumps
+        print("Skipping suspicious jump: $distance meters");
+        return;
+      }
 
-      _totalDistance += distance;
+      // Update total distance if we're actively tracking
+      if (isActivelyTracking && distance >= 1.0) {  // Count movements of 1m or more
+        _totalDistance += distance;
 
-      if (_startTime != null) {
-        final elapsedMinutes = DateTime.now().difference(_startTime!).inSeconds / 60.0;
-        final paceMinutes = elapsedMinutes / (_totalDistance / 1000.0);
-        final paceMin = paceMinutes.floor();
-        final paceSec = (paceMinutes % 1 * 60).round();
-        _pace = "$paceMin:${paceSec.toString().padLeft(2, '0')}"; // Remove "min/km" suffix
+        // Update pace calculation
+        if (_startTime != null) {
+          final elapsedMinutes = DateTime.now().difference(_startTime!).inSeconds / 60.0;
+          if (_totalDistance > 0) {  // Prevent division by zero
+            final paceMinutes = elapsedMinutes / (_totalDistance / 1000.0);
+            final paceMin = paceMinutes.floor();
+            final paceSec = (paceMinutes % 1 * 60).round();
+            _pace = "$paceMin:${paceSec.toString().padLeft(2, '0')}";
+          }
+        }
       }
     }
 
-    _polylines = [
-      Polyline(
-        points: _route,
-        color: Colors.blue,
-        strokeWidth: 4.0,
-      ),
-    ];
+    // Add point to route if tracking is active
+    if (isActivelyTracking) {
+      _route.add(routePoint.position);
 
-    _markers = [
-      Marker(
-        width: 40.0,
-        height: 40.0,
-        point: routePoint.position,
-        builder: (ctx) => Icon(
-          Icons.navigation,
-          color: Colors.red,
-          size: 20.0,
+      // Update polyline with smoothed route
+      _polylines = [
+        Polyline(
+          points: _smoothRoute(_route),
+          color: Colors.blue,
+          strokeWidth: 4.0,
         ),
-      ),
-    ];
+      ];
 
-    if (_route.length % 5 == 0 || distance > 5) {
-      _mapController.move(routePoint.position, _mapController.zoom);
+      // Update current position marker
+      _markers = [
+        Marker(
+          width: 40.0,
+          height: 40.0,
+          point: routePoint.position,
+          builder: (ctx) => Icon(
+            Icons.navigation,
+            color: Colors.red,
+            size: 20.0,
+          ),
+        ),
+      ];
+
+      // Auto-center map occasionally
+      if (_route.length % 5 == 0) {
+        _mapController.move(routePoint.position, _mapController.zoom);
+      }
+
+      notifyListeners();
+    }
+  }
+
+  List<LatLng> _smoothRoute(List<LatLng> points, {int windowSize = 3}) {
+    if (points.length < windowSize) return points;
+
+    List<LatLng> smoothed = [];
+    for (int i = 0; i < points.length; i++) {
+      if (i < windowSize ~/ 2 || i >= points.length - windowSize ~/ 2) {
+        smoothed.add(points[i]);
+        continue;
+      }
+
+      double latSum = 0, lngSum = 0;
+      for (int j = i - windowSize ~/ 2; j <= i + windowSize ~/ 2; j++) {
+        latSum += points[j].latitude;
+        lngSum += points[j].longitude;
+      }
+
+      smoothed.add(LatLng(
+        latSum / windowSize,
+        lngSum / windowSize,
+      ));
     }
 
-    notifyListeners();
+    return smoothed;
   }
 
 
   String getElapsedTime() {
-    if (_startTime == null) return "0:00";
+    if (_startTime == null || !_isTracking) return "0:00";
     final elapsed = DateTime.now().difference(_startTime!);
     final minutes = elapsed.inMinutes;
     final seconds = elapsed.inSeconds % 60;
@@ -289,6 +368,21 @@ class MapViewModel extends ChangeNotifier {
 
     _history = await trackingRepository.fetchTrackingHistory(userId: userId);
     notifyListeners();
+  }
+
+  Future<List<Map<String, dynamic>>> getLastThreeActivities() async {
+    final userId = _authViewModel.currentUser?.id;
+    if (userId == null) {
+      print('No user logged in');
+      return [];
+    }
+
+    final history = await trackingRepository.fetchTrackingHistory(userId: userId);
+    if (history.isEmpty) {
+      return [];
+    }
+    print(history.take(3).toList()); // manual logging
+    return history.take(3).toList();
   }
 
 }
