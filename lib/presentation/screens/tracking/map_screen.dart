@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
@@ -34,12 +35,6 @@ class _MapScreenState extends State<MapScreen> {
         ),
         backgroundColor: Colors.teal,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.history),
-            onPressed: () => Navigator.pushNamed(context, '/history'),
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -67,6 +62,43 @@ class _MapScreenState extends State<MapScreen> {
               ),
             ],
           ),
+
+          // GPS Signal Indicator on left side
+          Positioned(
+            top: 16,
+            left: 16,
+            child: _buildGpsSignalBars(viewModel),
+          ),
+
+          // Current Location and Simulation buttons on right side
+          Positioned(
+            bottom: 100,  // Above the tracking button
+            right: 16,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // if (kDebugMode)
+                //   FloatingActionButton(
+                //     heroTag: 'simulate',
+                //     mini: true,
+                //     onPressed: viewModel.toggleSimulation,
+                //     child: Icon(
+                //       viewModel.isSimulating ? Icons.stop : Icons.play_arrow,
+                //     ),
+                //     backgroundColor: viewModel.isSimulating ? Colors.red : Colors.blue,
+                //   ),
+                // SizedBox(height: 8),
+                FloatingActionButton(
+                  heroTag: 'centerLocation',
+                  mini: true,
+                  onPressed: viewModel.centerOnCurrentLocation,
+                  child: Icon(Icons.my_location),
+                ),
+              ],
+            ),
+          ),
+
+          // Tracking button at bottom
           Positioned(
             bottom: 20,
             left: 20,
@@ -80,7 +112,8 @@ class _MapScreenState extends State<MapScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Text(viewModel.isTracking ? 'Stop Tracking' : 'Start Tracking',
+              child: Text(
+                viewModel.isTracking ? 'Stop Tracking' : 'Start Tracking',
                 style: const TextStyle(fontSize: 16),
               ),
             ),
@@ -99,5 +132,70 @@ class _MapScreenState extends State<MapScreen> {
         Text(value, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       ],
     );
+  }
+
+
+  Widget _buildGpsSignalBars(MapViewModel viewModel) {
+    if (!viewModel.showGpsSignal) return SizedBox.shrink();
+
+    final int signalStrength = _getSignalBars(viewModel.gpsAccuracy);
+    final color = _getGpsColor(viewModel.gpsAccuracy);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              height: 20,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: List.generate(4, (index) {
+                  final bool isActive = index < signalStrength;
+                  return Container(
+                    width: 4,
+                    height: 5 + (index * 4), // Progressively taller bars
+                    margin: EdgeInsets.symmetric(horizontal: 1),
+                    decoration: BoxDecoration(
+                      color: isActive ? color : Colors.grey[300],
+                      borderRadius: BorderRadius.vertical(
+                        top: Radius.circular(1),
+                      ),
+                    ),
+                  );
+                }).toList(), // Reverse to show shorter bars first
+              ),
+            ),
+            SizedBox(width: 6),
+            Text(
+              '${viewModel.gpsAccuracy}m',
+              style: TextStyle(
+                fontSize: 12,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  int _getSignalBars(int accuracy) {
+    if (accuracy <= 5) return 4;      // Excellent signal (4 bars)
+    if (accuracy <= 10) return 3;     // Good signal (3 bars)
+    if (accuracy <= 20) return 2;     // Fair signal (2 bars)
+    if (accuracy <= 30) return 1;     // Poor signal (1 bar)
+    return 0;                         // Very poor signal (no bars)
+  }
+
+  Color _getGpsColor(int accuracy) {
+    if (accuracy <= 5) return Colors.green;       // Excellent
+    if (accuracy <= 10) return Color(0xFF90EE90); // Light green
+    if (accuracy <= 20) return Colors.orange;     // Fair
+    if (accuracy <= 30) return Colors.deepOrange; // Poor
+    return Colors.red;                           // Very poor
   }
 }
