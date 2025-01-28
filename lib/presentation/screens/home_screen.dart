@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/domain/repository/achievements_repository.dart';
+import 'package:mobile_project_fitquest/presentation/viewmodels/analytics_view_model_extensions.dart';
+import 'package:mobile_project_fitquest/theme/app_colors.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/personal_record.dart';
+import '../../domain/entities/achievement.dart';
+import '../../domain/entities/goals/fitness_goal.dart';
 import '../../domain/enums/goal_type.dart';
 import '../../domain/repository/goals/goals_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
-import '../../theme/app_theme.dart';
 import '../viewmodels/achievements_viewmodel.dart';
 import '../viewmodels/auth/auth_viewmodel.dart';
 import '../viewmodels/goals/goals_view_model.dart';
 import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/analytics_view_model.dart';
-import 'history_screen.dart';
-import 'achievements_screen.dart';
-import 'goals/goals_screen.dart';
+import '../widgets/custom_progress_bar.dart';
+import '../widgets/dashboard_card.dart';
 import 'training/interval_training_screen.dart';
-
-
-
 
 
 class HomeScreen extends StatelessWidget {
@@ -50,7 +49,19 @@ class HomeScreen extends StatelessWidget {
           create: (_) => AchievementsViewModel(_achievementsRepository, userId),
         ),
       ],
-      child: const HomeScreenContent(),
+      child:  Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              AppColors.backgroundStart,
+              AppColors.backgroundEnd,
+            ],
+          ),
+        ),
+        child: const HomeScreenContent(),
+      ),
     );
   }
 }
@@ -72,7 +83,7 @@ class HomeScreenContent extends StatelessWidget {
           const SizedBox(height: 16),
           _buildPersonalRecordsCard(context),
           const SizedBox(height: 16),
-          _buildQuickStatsRow(context),
+          _buildStatisticsCard(context),
           const SizedBox(height: 16),
           _buildIntervalTrainingCard(context),
           const SizedBox(height: 16),
@@ -85,192 +96,266 @@ class HomeScreenContent extends StatelessWidget {
   Widget _buildRecentActivitiesCard(BuildContext context) {
     final viewModel = Provider.of<MapViewModel>(context);
 
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: viewModel.getLastThreeActivities(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Card(
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+    return DashboardCard(
+      icon: const Icon(Icons.trending_up, color: Colors.white, size: 24),
+      title: 'Recent Runs',
+      content: FutureBuilder<List<Map<String, dynamic>>>(
+        future: viewModel.getLastThreeActivities(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            );
+          }
 
-        if (snapshot.hasError) {
-          return Card(
-            child: Center(
+          if (snapshot.hasError) {
+            return Center(
               child: Text(
                 "Error loading recent activities: ${snapshot.error}",
-                style: const TextStyle(color: AppColors.textPrimary),
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium,
               ),
-            ),
+            );
+          }
+
+          final recentActivities = snapshot.data!;
+
+          if (recentActivities.isEmpty) {
+            return Text(
+              'No recent activities',
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .bodyMedium,
+            );
+          }
+
+          return Column(
+            children: recentActivities.map((activity) =>
+                _buildActivityItem(context, activity)
+            ).toList(),
           );
-        }
-
-        final recentActivities = snapshot.data!;
-
-        return Card(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              ListTile(
-                title: Text(
-                  'Recent Activities',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                trailing: TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const HistoryScreen()), //note here goes history screen
-                  ),
-                  child: const Text('More', style: TextStyle(color: AppColors.accentGreen)),
-                ),
-              ),
-              const Divider(color: AppColors.textSecondary),
-              if (recentActivities.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text(
-                    'No recent activities',
-                    style: TextStyle(color: AppColors.textSecondary),
-                  ),
-                )
-              else
-                ...recentActivities.map((activity) => _buildActivityItem(activity)),
-            ],
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 
-  Widget _buildActivityItem(Map<String, dynamic> activity) {
+  Widget _buildActivityItem(BuildContext context,
+      Map<String, dynamic> activity) {
     final timestamp = activity['timestamp'];
     final duration = activity['duration'];
-    final totalDistance = activity['total_distance'] ?? 00; // Handle null totalDistance
+    final totalDistance = activity['total_distance'] ?? 0.0;
     final avgPace = activity['avg_pace'];
 
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.cardHoverBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Icon(Icons.directions_run, color: AppColors.accentGreen),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Date: ${_formatTimestamp(timestamp)}",
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  "${totalDistance.toStringAsFixed(2)} km • ${_formatDuration(duration)} • $avgPace min/km",
-                  style: const TextStyle(color: AppColors.textPrimary),
-                ),
-              ],
-            ),
-          ),
+          // Date
           Text(
-            _formatTimeDifference(timestamp),
-            style: const TextStyle(color: AppColors.textSecondary),
+            _formatTimestamp(timestamp),
+            style: Theme
+                .of(context)
+                .textTheme
+                .bodyMedium,
+          ),
+
+          // Stats
+          Row(
+            children: [
+              // Distance
+              Text(
+                '${totalDistance.toStringAsFixed(1)}km',
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Duration
+              Text(
+                _formatDuration(duration),
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 16),
+
+              // Pace
+              Text(
+                '$avgPace/km',
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
   String _formatTimestamp(DateTime timestamp) {
-    final dateFormat = '${timestamp.year}-${timestamp.month.toString().padLeft(2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
-    final timeFormat = '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
-    return '$dateFormat at $timeFormat';
+    return '${timestamp.year}-${timestamp.month.toString().padLeft(
+        2, '0')}-${timestamp.day.toString().padLeft(2, '0')}';
   }
 
   String _formatDuration(int seconds) {
     final minutes = seconds ~/ 60;
     final remainingSeconds = seconds % 60;
-    return '$minutes min ${remainingSeconds.toString().padLeft(2, '0')} sec';
+    return '$minutes:${remainingSeconds.toString().padLeft(2, '0')}';
   }
 
-  String _formatTimeDifference(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inSeconds < 60) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} min ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hr ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} day ago';
-    } else {
-      return '${timestamp.day}/${timestamp.month}/${timestamp.year}';
-    }
-  }
 
   Widget _buildGoalsCard(BuildContext context) {
     final goals = context.watch<GoalsViewModel>();
 
-    return Card(
+    return DashboardCard(
+      icon: const Icon(Icons.track_changes, color: Colors.white, size: 24),
+      title: 'Goals',
+      content: goals.isLoading
+          ? const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      )
+          : goals.activeGoals.isEmpty
+          ? Text(
+        'No active goals',
+        style: Theme
+            .of(context)
+            .textTheme
+            .bodyMedium,
+      )
+          : Column(
+        children: goals.activeGoals
+            .take(3) // Show only 3 goals like in React example
+            .map((goal) => _buildGoalItem(context, goal))
+            .toList(),
+      ),
+    );
+  }
+
+
+
+  Widget _buildGoalItem(BuildContext context, FitnessGoal goal) {
+    final progressPercentage = goal.progressPercentage.round();
+    final goalTitle = _formatGoalTitle(goal);
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            title: Text('Goals Progress',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            trailing: TextButton(
-              onPressed: () => Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const GoalsScreen()),
+          // Goal title and percentage
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Text(
+                  goalTitle,
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
               ),
-              child: const Text('More', style: TextStyle(color: AppColors.accentGreen)),
-            ),
+              Text(
+                '$progressPercentage%',
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium
+                    ?.copyWith(
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
-          const Divider(color: AppColors.textSecondary),
-          if (goals.isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (goals.activeGoals.isEmpty)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('No active goals',
-                  style: TextStyle(color: AppColors.textSecondary)),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: goals.activeGoals
-                    .take(2)
-                    .map((goal) => _buildGoalProgress(
-                  goal.type.toString().split('.').last,
-                  goal.progressPercentage / 100,
-                  '${goal.currentProgress.toStringAsFixed(1)}/${goal.target} ${_getUnitForGoalType(goal.type)}',
-                ))
-                    .toList(),
-              ),
-            ),
+          const SizedBox(height: 8),
+
+          // Progress bar
+          CustomProgressBar(
+            progress: goal.progressPercentage,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildQuickStatsRow(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: _buildQuickStatCard('This Week', '23.4 km'),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildQuickStatCard('Active Streak', '3 days'),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: _buildQuickStatCard('Next Plan', 'Tomorrow'),
-        ),
-      ],
-    );
+  String _formatGoalTitle(FitnessGoal goal) {
+    final unit = _getUnitForGoalType(goal.type);
+    final targetFormatted = _formatTargetValue(goal.target, goal.type);
+
+    switch (goal.type) {
+      case GoalType.distance:
+        return 'Run $targetFormatted$unit this week';
+      case GoalType.duration:
+        return 'Run for $targetFormatted$unit this week';
+      case GoalType.frequency:
+        return 'Complete ${goal.target.toInt()} runs';
+      case GoalType.calories:
+        return 'Burn $targetFormatted$unit';
+      case GoalType.pace:
+        return 'Achieve $targetFormatted$unit pace';
+      default:
+        return 'Unknown goal type';
+    }
+  }
+
+  String _formatTargetValue(double value, GoalType type) {
+    switch (type) {
+      case GoalType.distance:
+        return value.toStringAsFixed(1);
+      case GoalType.duration:
+        return '${value.toInt()}';
+      case GoalType.frequency:
+        return '${value.toInt()}';
+      case GoalType.calories:
+        return '${value.toInt()}';
+      case GoalType.pace:
+        return value.toStringAsFixed(2);
+    }
+  }
+
+  String _getUnitForGoalType(GoalType type) {
+    switch (type) {
+      case GoalType.distance:
+        return 'km';
+      case GoalType.duration:
+        return 'min';
+      case GoalType.frequency:
+        return '';
+      case GoalType.calories:
+        return 'cal';
+      case GoalType.pace:
+        return 'min/km';
+    }
   }
 
   Widget _buildPersonalRecordsCard(BuildContext context) {
@@ -289,7 +374,10 @@ class HomeScreenContent extends StatelessWidget {
         children: [
           ListTile(
             title: Text('Personal Records',
-              style: Theme.of(context).textTheme.titleLarge,
+              style: Theme
+                  .of(context)
+                  .textTheme
+                  .titleLarge,
             ),
           ),
           const Divider(color: AppColors.textSecondary),
@@ -310,88 +398,68 @@ class HomeScreenContent extends StatelessWidget {
                 // Find specific records
                 _buildRecordItem(
                   'Longest Run',
-                  records.firstWhere(
+                  records
+                      .firstWhere(
                         (r) => r.category == 'Longest Run',
-                    orElse: () => PersonalRecord(
-                      category: 'Longest Run',
-                      value: 0,
-                      displayValue: '0.0 km',
-                      achievedDate: DateTime.now(),
-                    ),
-                  ).displayValue,
+                    orElse: () =>
+                        PersonalRecord(
+                          category: 'Longest Run',
+                          value: 0,
+                          displayValue: '0.0 km',
+                          achievedDate: DateTime.now(),
+                        ),
+                  )
+                      .displayValue,
                 ),
                 _buildRecordItem(
                   'Best Pace',
-                  records.firstWhere(
+                  records
+                      .firstWhere(
                         (r) => r.category == 'Fastest Pace',
-                    orElse: () => PersonalRecord(
-                      category: 'Fastest Pace',
-                      value: 0,
-                      displayValue: '0:00 /km',
-                      achievedDate: DateTime.now(),
-                    ),
-                  ).displayValue,
+                    orElse: () =>
+                        PersonalRecord(
+                          category: 'Fastest Pace',
+                          value: 0,
+                          displayValue: '0:00 /km',
+                          achievedDate: DateTime.now(),
+                        ),
+                  )
+                      .displayValue,
                 ),
                 _buildRecordItem(
                   'Longest Duration',
-                  records.firstWhere(
+                  records
+                      .firstWhere(
                         (r) => r.category == 'Longest Duration',
-                    orElse: () => PersonalRecord(
-                      category: 'Longest Duration',
-                      value: 0,
-                      displayValue: '0h 0m',
-                      achievedDate: DateTime.now(),
-                    ),
-                  ).displayValue,
+                    orElse: () =>
+                        PersonalRecord(
+                          category: 'Longest Duration',
+                          value: 0,
+                          displayValue: '0h 0m',
+                          achievedDate: DateTime.now(),
+                        ),
+                  )
+                      .displayValue,
                 ),
                 _buildRecordItem(
                   'Most Distance (Week)',
-                  records.firstWhere(
+                  records
+                      .firstWhere(
                         (r) => r.category == 'Weekly Distance',
-                    orElse: () => PersonalRecord(
-                      category: 'Weekly Distance',
-                      value: 0,
-                      displayValue: '0.0 km',
-                      achievedDate: DateTime.now(),
-                    ),
-                  ).displayValue,
+                    orElse: () =>
+                        PersonalRecord(
+                          category: 'Weekly Distance',
+                          value: 0,
+                          displayValue: '0.0 km',
+                          achievedDate: DateTime.now(),
+                        ),
+                  )
+                      .displayValue,
                 ),
               ],
             ),
         ],
       ),
-    );
-  }
-
-  String _getUnitForGoalType(GoalType type) {
-    switch (type) {
-      case GoalType.distance:
-        return 'km';
-      case GoalType.duration:
-        return 'min';
-      case GoalType.frequency:
-        return 'runs';
-      case GoalType.calories:
-        return 'cal';
-      case GoalType.pace:
-        return 'min/km';
-    }
-  }
-
-  Widget _buildGoalProgress(String label, double progress, String status) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(label, style: const TextStyle(color: AppColors.textPrimary)),
-        const SizedBox(height: 4),
-        LinearProgressIndicator(
-          value: progress,
-          backgroundColor: AppColors.progressBackground,
-          color: AppColors.progressBar,
-        ),
-        const SizedBox(height: 4),
-        Text(status, style: const TextStyle(color: AppColors.textSecondary)),
-      ],
     );
   }
 
@@ -402,95 +470,214 @@ class HomeScreenContent extends StatelessWidget {
       children: [
         Text(label, style: const TextStyle(color: AppColors.textSecondary)),
         const SizedBox(height: 4),
-        Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+        Text(value, style: const TextStyle(
+            color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
       ],
     );
   }
 
 
+  Widget _buildStatisticsCard(BuildContext context) {
+    final analytics = context.watch<AnalyticsViewModel>();
 
-  Widget _buildQuickStatCard(String label, String value) {
-    return Card(
-      color: AppColors.cardDark,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+    return DashboardCard(
+      icon: const Icon(Icons.bar_chart, color: Colors.white, size: 24),
+      title: 'Statistics',
+      content: analytics.isLoading
+          ? const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+        ),
+      )
+          : GridView.count(
+        shrinkWrap: true,
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 1.5,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          _buildStatItem(
+            context,
+            'Total Distance',
+            '${analytics.totalDistance.toStringAsFixed(1)}km',
+          ),
+          _buildStatItem(
+            context,
+            'Total Runs',
+            analytics.totalRuns.toString(),
+          ),
+          _buildStatItem(
+            context,
+            'Avg Pace',
+            analytics.averagePace ?? '0:00/km',
+          ),
+          _buildStatItem(
+            context,
+            'Best Pace',
+            analytics.bestPace ?? '0:00/km',
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatItem(BuildContext context, String label, String value) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardHoverBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIntervalTrainingCard(BuildContext context) {
+    return DashboardCard(
+      icon: const Icon(Icons.timer, color: Colors.white, size: 24),
+      title: 'Interval Training',
+      content: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardHoverBackground,
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(color: AppColors.textSecondary)),
-
-            const SizedBox(height: 4),
-            Text(value, style: const TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+            Text(
+              'Next Session',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '5x400m repeats',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+              ),
+            ),
+            Text(
+              '2 min recovery between sets',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const IntervalTrainingScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.buttonPrimary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  elevation: 0,
+                ),
+                child: const Text('Start Workout'),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildIntervalTrainingCard(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const IntervalTrainingScreen()),
+  Widget _buildAchievementsCard(BuildContext context) {
+    final achievements = context.watch<AchievementsViewModel>();
+
+    return DashboardCard(
+      icon: const Icon(Icons.emoji_events, color: Colors.white, size: 24),
+      title: 'Achievements',
+      content: achievements.isLoading
+          ? const Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
         ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Interval Training',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                ],
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Improve your speed and endurance with high-intensity interval training sessions.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
-          ),
-        ),
+      )
+          : achievements.achievements.isEmpty
+          ? Text(
+        'No achievements yet',
+        style: Theme
+            .of(context)
+            .textTheme
+            .bodyMedium,
+      )
+          : Column(
+        children: achievements.achievements
+            .take(2) // Show only recent achievements
+            .map((achievement) => _buildAchievementItem(context, achievement))
+            .toList(),
       ),
     );
   }
 
-  Widget _buildAchievementsCard(BuildContext context) {
-    return Card(
-      child: InkWell(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AchievementsScreen()),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Achievements',
-                    style: Theme.of(context).textTheme.titleLarge,
-                  ),
-                  const Icon(Icons.chevron_right, color: AppColors.textSecondary),
-                ],
+  Widget _buildAchievementItem(BuildContext context, Achievement achievement) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.cardHoverBackground,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Achievement Title
+          Expanded(
+            child: Text(
+              achievement.title,
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
               ),
-              const SizedBox(height: 8),
-              const Text(
-                'Unlock achievements and earn rewards for your running milestones.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // Achievement Date
+          Text(
+            _formatAchievementDate(achievement.unlockedAt!),
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: AppColors.textSecondary,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _formatAchievementDate(DateTime date) {
+    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
