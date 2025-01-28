@@ -9,9 +9,10 @@ class AuthViewModel extends ChangeNotifier {
   bool _isLoading = true;
   String? _error;
   StreamSubscription<User?>? _authStateSubscription;
+  bool _isInitialized = false;
 
   AuthViewModel(this._authRepository) {
-    _init();
+    _initialize();
   }
 
   User? get currentUser => _currentUser;
@@ -19,49 +20,69 @@ class AuthViewModel extends ChangeNotifier {
   String? get error => _error;
   bool get isAuthenticated => _currentUser != null;
 
-  void _init() async {
-    _authStateSubscription = _authRepository.authStateChanges.listen(
-          (user) {
-        _currentUser = user;
-        _isLoading = false;
-        notifyListeners();
-      },
-      onError: (error) {
-        if (kDebugMode) {
-          print('Auth state error: $error');
-        }
-        _error = error.toString();
-        _isLoading = false;
-        notifyListeners();
-      },
-    );
+  Future<void> _initialize() async {
+    if (_isInitialized) return;
 
     try {
+      // First check current user
       _currentUser = await _authRepository.getCurrentUser();
+
+      // Then set up auth state listener
+      _authStateSubscription = _authRepository.authStateChanges.listen(
+            (user) {
+          if (kDebugMode) {
+            print('Auth state changed: ${user?.id}');
+          }
+          _currentUser = user;
+          _isLoading = false;
+          notifyListeners();
+        },
+        onError: (error) {
+          if (kDebugMode) {
+            print('Auth state error: $error');
+          }
+          _error = error.toString();
+          _isLoading = false;
+          notifyListeners();
+        },
+      );
+
     } catch (e) {
       if (kDebugMode) {
-        print('Init current user error: $e');
+        print('Initialization error: $e');
       }
       _error = e.toString();
     } finally {
       _isLoading = false;
+      _isInitialized = true;
       notifyListeners();
     }
   }
 
   Future<void> signInWithEmail(String email, String password) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (_isLoading) return;
 
     try {
-      _currentUser = await _authRepository.signInWithEmail(email, password);
+      _isLoading = true;
       _error = null;
+      notifyListeners();
+
+      if (kDebugMode) {
+        print('Attempting sign in with email: $email');
+      }
+
+      _currentUser = await _authRepository.signInWithEmail(email, password);
+
+      if (kDebugMode) {
+        print('Sign in successful. User: ${_currentUser?.id}');
+      }
+
     } catch (e) {
       if (kDebugMode) {
-        print('Sign in error: $e');
+        print('Sign in error in ViewModel: $e');
       }
       _error = e.toString();
+      _currentUser = null;
       rethrow;
     } finally {
       _isLoading = false;
@@ -70,18 +91,29 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signUpWithEmail(String email, String password) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (_isLoading) return;
 
     try {
-      _currentUser = await _authRepository.signUpWithEmail(email, password);
+      _isLoading = true;
       _error = null;
+      notifyListeners();
+
+      if (kDebugMode) {
+        print('Attempting sign up with email: $email');
+      }
+
+      _currentUser = await _authRepository.signUpWithEmail(email, password);
+
+      if (kDebugMode) {
+        print('Sign up successful. User: ${_currentUser?.id}');
+      }
+
     } catch (e) {
       if (kDebugMode) {
-        print('Sign up error: $e');
+        print('Sign up error in ViewModel: $e');
       }
       _error = e.toString();
+      _currentUser = null;
       rethrow;
     } finally {
       _isLoading = false;
@@ -90,13 +122,20 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (_isLoading) return;
 
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
       await _authRepository.signOut();
       _currentUser = null;
+
+      if (kDebugMode) {
+        print('Sign out successful');
+      }
+
     } catch (e) {
       if (kDebugMode) {
         print('Sign out error: $e');
@@ -110,12 +149,19 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> resetPassword(String email) async {
-    _isLoading = true;
-    _error = null;
-    notifyListeners();
+    if (_isLoading) return;
 
     try {
+      _isLoading = true;
+      _error = null;
+      notifyListeners();
+
       await _authRepository.resetPassword(email);
+
+      if (kDebugMode) {
+        print('Password reset email sent to: $email');
+      }
+
     } catch (e) {
       if (kDebugMode) {
         print('Reset password error: $e');
@@ -125,6 +171,18 @@ class AuthViewModel extends ChangeNotifier {
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  Future<void> refreshUser() async {
+    try {
+      final user = await _authRepository.getCurrentUser();
+      _currentUser = user;
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) {
+        print('Refresh user error: $e');
+      }
     }
   }
 

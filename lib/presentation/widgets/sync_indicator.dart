@@ -4,12 +4,14 @@ import '../../domain/services/sync_service.dart';
 import '../viewmodels/sync_manager.dart';
 
 class SyncIndicator extends StatelessWidget {
+  const SyncIndicator({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<SyncManager>(
       builder: (context, syncManager, _) {
         if (syncManager.status == SyncStatus.syncing) {
-          return IconButton(
+          return const IconButton(
             icon: SizedBox(
               width: 24,
               height: 24,

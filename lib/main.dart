@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:mobile_project_fitquest/presentation/screens/home_screen.dart';
-import 'package:mobile_project_fitquest/presentation/screens/auth/login_screen.dart';
-import 'package:mobile_project_fitquest/presentation/screens/main_screen.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/achievements_viewmodel.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/auth/auth_viewmodel.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/goals/goals_view_model.dart';
-import 'package:mobile_project_fitquest/presentation/viewmodels/training/training_plan_view_model.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart';
 
+// Import your local files
+import 'presentation/screens/auth/login_screen.dart';
+import 'presentation/screens/main_screen.dart';
+import 'presentation/viewmodels/achievements_viewmodel.dart';
+import 'presentation/viewmodels/auth/auth_viewmodel.dart';
+import 'presentation/viewmodels/goals/goals_view_model.dart';
+import 'presentation/viewmodels/training/training_plan_view_model.dart';
 import 'domain/repository/achievements_repository.dart';
 import 'domain/repository/auth/firebase_auth_repository.dart';
 import 'domain/repository/firebase_achievements_repository.dart';
@@ -28,157 +28,247 @@ import 'domain/usecases/location_tracking_use_case.dart';
 import 'data/datasources/local/location_service.dart';
 import 'data/datasources/local/tracking_local_data_source.dart';
 
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
 
-  runApp(
-    MultiProvider(
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('Firebase initialized successfully');
+  } catch (e) {
+    print('Firebase initialization error: $e');
+    // Consider showing an error screen or terminating the app
+  }
+
+  runApp(const MyApp());
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiProvider(
       providers: [
-        // Base services
+        // Base Services
         Provider<Location>(
           create: (_) => Location(),
         ),
         Provider<LocationService>(
-          create: (context) => LocationService(
-              Provider.of<Location>(context, listen: false)
-          ),
+          create: (context) => LocationService(context.read<Location>()),
         ),
         Provider<TrackingLocalDataSource>(
           create: (_) => TrackingLocalDataSource(),
         ),
 
-
+        // Auth
         Provider<AuthRepository>(
           create: (_) => FirebaseAuthRepository(),
-          lazy: false,
         ),
-
-        // ViewModels
         ChangeNotifierProvider<AuthViewModel>(
-          create: (context) => AuthViewModel(
-            context.read<AuthRepository>(),
-          ),
-        ),
-
-        // Goals
-        Provider<GoalsRepository>(
-          create: (_) => FirebaseGoalsRepository(),
+          create: (context) => AuthViewModel(context.read<AuthRepository>()),
           lazy: false,
         ),
-        ChangeNotifierProvider<GoalsViewModel>(
-          create: (context) => GoalsViewModel(
-            context.read<GoalsRepository>(),context.read<AuthViewModel>().currentUser!.id,
-          ),
-        ),
 
-        Provider<AchievementsRepository>(
-          create: (_) => FirebaseAchievementsRepository(),
-          lazy: false,
-        ),
-        ChangeNotifierProvider<AchievementsViewModel>(
-          create: (context) => AchievementsViewModel(
-            context.read<AchievementsRepository>(),context.read<AuthViewModel>().currentUser!.id,
-          ),
-        ),
-
-
-        // Repository
+        // Tracking Services
         Provider<FirestoreTrackingService>(
           create: (_) => FirestoreTrackingService(),
-          lazy: false,
         ),
-
         ProxyProvider2<TrackingLocalDataSource, FirestoreTrackingService, TrackingRepository>(
           update: (_, localDataSource, firestoreService, __) =>
               TrackingRepository(localDataSource, firestoreService),
         ),
 
-        // Use cases
+        // Location Tracking
         ProxyProvider<LocationService, LocationTrackingUseCase>(
-          update: (_, locationService, __) => LocationTrackingUseCase(
-              locationService.locationStream
-          ),
+          update: (_, locationService, __) =>
+              LocationTrackingUseCase(locationService.locationStream),
         ),
 
-        // Other ViewModels
-        ChangeNotifierProvider<MapViewModel>(
-          create: (context) {
-            final locationTrackingUseCase = Provider.of<LocationTrackingUseCase>(context, listen: false);
-            final trackingRepository = Provider.of<TrackingRepository>(context, listen: false);
-            final locationService = Provider.of<LocationService>(context, listen: false);
-            final authviewModel = Provider.of<AuthViewModel>(context, listen: false);
-            return MapViewModel(
-                locationTrackingUseCase,
-                trackingRepository,
-                locationService,
-                MapController(),
-                authviewModel
-            );
+        // Repositories
+        ProxyProvider<AuthViewModel, GoalsRepository?>(
+          update: (_, authViewModel, __) => authViewModel.isAuthenticated
+              ? FirebaseGoalsRepository()
+              : null,
+        ),
+        ProxyProvider<AuthViewModel, AchievementsRepository?>(
+          update: (_, authViewModel, __) => authViewModel.isAuthenticated
+              ? FirebaseAchievementsRepository()
+              : null,
+        ),
+        Provider<FirebaseTrainingPlanRepository>(
+          create: (_) => FirebaseTrainingPlanRepository(),
+        ),
+
+        // ViewModels
+        ChangeNotifierProxyProvider2<GoalsRepository?, AuthViewModel, GoalsViewModel>(
+          create: (_) => GoalsViewModel(null, ''),
+          update: (_, goalsRepository, authViewModel, previous) {
+            return (authViewModel.isAuthenticated && goalsRepository != null)
+                ? GoalsViewModel(goalsRepository, authViewModel.currentUser!.id)
+                : previous!..clear();
+          },
+        ),
+
+        ChangeNotifierProxyProvider2<AchievementsRepository?, AuthViewModel, AchievementsViewModel>(
+          create: (_) => AchievementsViewModel(null, ''),
+          update: (_, achievementsRepository, authViewModel, previous) {
+            return (authViewModel.isAuthenticated && achievementsRepository != null)
+                ? AchievementsViewModel(achievementsRepository, authViewModel.currentUser!.id)
+                : previous!..clear();
+          },
+        ),
+
+        ChangeNotifierProxyProvider3<AuthViewModel, TrackingRepository, LocationTrackingUseCase, MapViewModel>(
+          create: (_) => MapViewModel(
+            null,
+            null,
+            null,
+            MapController(),
+            null,
+          ),
+          update: (context, authViewModel, trackingRepository, locationTrackingUseCase, previous) {
+            return (authViewModel.isAuthenticated)
+                ? MapViewModel(
+              locationTrackingUseCase,
+              trackingRepository,
+              context.read<LocationService>(),
+              previous?.mapController ?? MapController(),
+              authViewModel,
+            )
+                : previous!..clear();
           },
         ),
 
         ChangeNotifierProvider<AnalyticsViewModel>(
-          create: (context) {
-            final trackingRepository = Provider.of<TrackingRepository>(context, listen: false);
-            return AnalyticsViewModel(trackingRepository);
-          },
+          create: (context) => AnalyticsViewModel(context.read<TrackingRepository>()),
         ),
 
-        ChangeNotifierProvider(
+        ChangeNotifierProvider<IntervalTrainingViewModel>(
           create: (_) => IntervalTrainingViewModel(),
         ),
 
-        ChangeNotifierProvider<TrainingPlanViewModel>(
-          create: (context) => TrainingPlanViewModel(
-            FirebaseTrainingPlanRepository(),
-            context.read<AuthViewModel>().currentUser!.id,
-          ),
+        ChangeNotifierProxyProvider2<AuthViewModel, FirebaseTrainingPlanRepository, TrainingPlanViewModel>(
+          create: (_) => TrainingPlanViewModel(null, ''),
+          update: (_, authViewModel, trainingPlanRepo, previous) {
+            return (authViewModel.isAuthenticated)
+                ? TrainingPlanViewModel(trainingPlanRepo, authViewModel.currentUser!.id)
+                : previous!..clear();
+          },
         ),
       ],
-      child: MyApp(),
-    ),
-  );
-}
-
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'FitQuest',
-      theme: ThemeData(
-        primarySwatch: Colors.teal,
-        scaffoldBackgroundColor: Colors.grey[100],
-        cardTheme: CardTheme(
-          elevation: 2,
-          margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        title: 'FitQuest',
+        theme: ThemeData(
+          primarySwatch: Colors.teal,
+          scaffoldBackgroundColor: Colors.grey[100],
+          cardTheme: CardTheme(
+            elevation: 2,
+            margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ),
+        home: const AuthenticationWrapper(),
       ),
-      home: AuthenticationWrapper(),
     );
   }
 }
 
-class AuthenticationWrapper extends StatelessWidget {
+class AuthenticationWrapper extends StatefulWidget {
+  const AuthenticationWrapper({super.key});
+
+  @override
+  State<AuthenticationWrapper> createState() => _AuthenticationWrapperState();
+}
+
+class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
+  bool _isInitializing = false;
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthViewModel>(
-      builder: (_, authViewModel, __) {
+      builder: (context, authViewModel, _) {
+        // Show loading while auth is being checked
         if (authViewModel.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-        print(authViewModel.isAuthenticated);
-        return authViewModel.isAuthenticated ? MainScreen() : LoginScreen();
+
+        // Show login screen if not authenticated
+        if (!authViewModel.isAuthenticated) {
+          return const LoginScreen();
+        }
+
+        // Initialize ViewModels if authenticated
+        return FutureBuilder(
+          future: _initializeViewModels(context),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done) {
+              return const Scaffold(
+                body: Center(child: CircularProgressIndicator()),
+              );
+            }
+
+            // Check if all ViewModels are initialized
+            return Consumer4<GoalsViewModel, AchievementsViewModel, MapViewModel, TrainingPlanViewModel>(
+              builder: (context, goalsVM, achievementsVM, mapVM, trainingPlanVM, _) {
+                final allInitialized = goalsVM.isInitialized &&
+                    achievementsVM.isInitialized &&
+                    mapVM.isInitialized &&
+                    trainingPlanVM.isInitialized;
+
+                if (!allInitialized) {
+                  print('Not all ViewModels initialized:');
+                  print('Goals: ${goalsVM.isInitialized}');
+                  print('Achievements: ${achievementsVM.isInitialized}');
+                  print('Map: ${mapVM.isInitialized}');
+                  print('Training: ${trainingPlanVM.isInitialized}');
+                  return const Scaffold(
+                    body: Center(child: CircularProgressIndicator()),
+                  );
+                }
+
+                return const MainScreen();
+              },
+            );
+          },
+        );
       },
     );
+  }
+
+  Future<void> _initializeViewModels(BuildContext context) async {
+    if (_isInitializing) return;
+    _isInitializing = true;
+
+    try {
+      final goalsVM = context.read<GoalsViewModel>();
+      final achievementsVM = context.read<AchievementsViewModel>();
+      final mapVM = context.read<MapViewModel>();
+      final trainingPlanVM = context.read<TrainingPlanViewModel>();
+
+      // Initialize each ViewModel sequentially to avoid race conditions
+      await goalsVM.initialize();
+      print('Goals initialized');
+
+      await achievementsVM.initialize();
+      print('Achievements initialized');
+
+      await mapVM.initialize();
+      print('Map initialized');
+
+      await trainingPlanVM.initialize();
+      print('Training initialized');
+
+    } catch (e) {
+      print('Error during initialization: $e');
+    } finally {
+      _isInitializing = false;
+    }
   }
 }

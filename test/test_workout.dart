@@ -12,8 +12,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -24,8 +24,8 @@ void main() {
       expect(workout.userId, 'user1');
       expect(workout.timestamp, DateTime(2023, 5, 1, 10, 30));
       expect(workout.route, [
-        LatLng(40.730610, -73.935242),
-        LatLng(40.730810, -73.935442),
+        const LatLng(40.730610, -73.935242),
+        const LatLng(40.730810, -73.935442),
       ]);
       expect(workout.totalDistance, 1.2);
       expect(workout.duration, 600);
@@ -38,8 +38,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -64,8 +64,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -81,8 +81,8 @@ void main() {
       expect(workout.userId, 'user1');
       expect(workout.timestamp, DateTime(2023, 5, 1, 10, 30));
       expect(workout.route, [
-        LatLng(40.730610, -73.935242),
-        LatLng(40.730810, -73.935442),
+        const LatLng(40.730610, -73.935242),
+        const LatLng(40.730810, -73.935442),
       ]);
       expect(workout.totalDistance, 1.2);
       expect(workout.duration, 600);
@@ -100,8 +100,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -136,8 +136,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -161,8 +161,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -190,8 +190,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -211,8 +211,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,
@@ -234,8 +234,8 @@ void main() {
         userId: 'user1',
         timestamp: DateTime(2023, 5, 1, 10, 30),
         route: [
-          LatLng(40.730610, -73.935242),
-          LatLng(40.730810, -73.935442),
+          const LatLng(40.730610, -73.935242),
+          const LatLng(40.730810, -73.935442),
         ],
         totalDistance: 1.2,
         duration: 600,

@@ -14,10 +14,10 @@ import 'package:mobile_project_fitquest/data/models/route_replay_state.dart';
 void main() {
   group('RouteReplayState Creation', () {
     test('creates with default values', () {
-      final route = [LatLng(0, 0), LatLng(1, 1)];
+      final route = [const LatLng(0, 0), const LatLng(1, 1)];
       final state = RouteReplayState(
         route: route,
-        duration: Duration(minutes: 10),
+        duration: const Duration(minutes: 10),
       );
 
       expect(state.currentPointIndex, 0);
@@ -28,13 +28,13 @@ void main() {
     });
 
     test('creates with custom values', () {
-      final route = [LatLng(0, 0), LatLng(1, 1)];
+      final route = [const LatLng(0, 0), const LatLng(1, 1)];
       final state = RouteReplayState(
         route: route,
         currentPointIndex: 1,
         totalDistance: 100.0,
         pace: "5:30 min/km",
-        duration: Duration(minutes: 10),
+        duration: const Duration(minutes: 10),
         isPlaying: true,
         playbackSpeed: 2.0,
       );
@@ -49,10 +49,10 @@ void main() {
 
   group('State Updates', () {
     test('updates partial state via copyWith', () {
-      final route = [LatLng(0, 0), LatLng(1, 1)];
+      final route = [const LatLng(0, 0), const LatLng(1, 1)];
       final initialState = RouteReplayState(
         route: route,
-        duration: Duration(minutes: 10),
+        duration: const Duration(minutes: 10),
       );
 
       final updatedState = initialState.copyWith(

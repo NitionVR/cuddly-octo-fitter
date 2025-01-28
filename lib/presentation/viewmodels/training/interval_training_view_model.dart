@@ -64,11 +64,11 @@ class IntervalTrainingViewModel extends ChangeNotifier {
 
   void _startTimer() {
     _timer?.cancel();
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (_segmentTimeRemaining <= Duration.zero) {
         _moveToNextSegment();
       } else {
-        _segmentTimeRemaining -= Duration(seconds: 1);
+        _segmentTimeRemaining -= const Duration(seconds: 1);
         notifyListeners();
       }
     });

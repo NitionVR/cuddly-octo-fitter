@@ -199,7 +199,7 @@ class _AchievementCard extends StatelessWidget {
             ] else ...[
               Text(
                 'Progress: ${_getProgressText()}',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ],
           ],

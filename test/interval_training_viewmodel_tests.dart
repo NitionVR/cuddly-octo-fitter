@@ -66,17 +66,17 @@ void main() {
         segments: [
           IntervalSegment(
             type: IntervalType.running,
-            duration: Duration(seconds: 1),
+            duration: const Duration(seconds: 1),
           ),
           IntervalSegment(
             type: IntervalType.recovery,
-            duration: Duration(seconds: 1),
+            duration: const Duration(seconds: 1),
           ),
         ],
       );
 
       viewModel.startWorkout(workout);
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 2));
 
       expect(viewModel.currentSegmentIndex, 1);
     });

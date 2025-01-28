@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/training/training_plan.dart';
+import '../../../domain/entities/training/training_week.dart';
 
 class PlanDetailsScreen extends StatelessWidget {
   final TrainingPlan plan;
@@ -33,7 +34,7 @@ class PlanDetailsScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildOverview(),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
                   Text(
                     'Week by Week',
                     style: Theme.of(context).textTheme.headlineSmall,
@@ -55,8 +56,8 @@ class PlanDetailsScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _startPlan(context),
-        label: Text('Start Plan'),
-        icon: Icon(Icons.play_arrow),
+        label: const Text('Start Plan'),
+        icon: const Icon(Icons.play_arrow),
       ),
     );
   }
@@ -66,7 +67,7 @@ class PlanDetailsScreen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(plan.description),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
@@ -89,7 +90,7 @@ class PlanDetailsScreen extends StatelessWidget {
     return Column(
       children: [
         Icon(icon),
-        SizedBox(height: 4),
+        const SizedBox(height: 4),
         Text(text),
       ],
     );
@@ -116,7 +117,7 @@ class _WeekOverview extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.all(16),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -125,7 +126,7 @@ class _WeekOverview extends StatelessWidget {
                 style: Theme.of(context).textTheme.titleLarge,
               ),
               if (week.notes != null) ...[
-                SizedBox(height: 8),
+                const SizedBox(height: 8),
                 Text(week.notes!),
               ],
             ],
@@ -142,7 +143,7 @@ class _WeekOverview extends StatelessWidget {
           ),
         )),
         if (!isLastWeek)
-          Divider(height: 32),
+          const Divider(height: 32),
       ],
     );
   }

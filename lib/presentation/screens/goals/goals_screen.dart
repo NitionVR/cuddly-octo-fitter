@@ -80,7 +80,7 @@ class GoalsScreen extends StatelessWidget {
 class _GoalCard extends StatelessWidget {
   final FitnessGoal goal;
 
-  const _GoalCard({super.key, required this.goal});
+  const _GoalCard({required this.goal});
 
   @override
   Widget build(BuildContext context) {
@@ -242,7 +242,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                     _selectedType = value!;
                   });
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Goal Type',
                   labelStyle: TextStyle(color: AppColors.textSecondary),
                   focusedBorder: UnderlineInputBorder(
@@ -250,27 +250,27 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               TextFormField(
                 controller: _targetController,
                 keyboardType: TextInputType.number,
-                style: TextStyle(color: AppColors.textPrimary),
+                style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   labelText: 'Target',
-                  labelStyle: TextStyle(color: AppColors.textSecondary),
+                  labelStyle: const TextStyle(color: AppColors.textSecondary),
                   suffixText: _getTargetSuffix(),
-                  focusedBorder: UnderlineInputBorder(
+                  focusedBorder: const UnderlineInputBorder(
                     borderSide: BorderSide(color: AppColors.accentGreen),
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               DropdownButtonFormField<GoalPeriod>(
                 value: _selectedPeriod,
                 items: GoalPeriod.values.map((period) {
                   return DropdownMenuItem(
                     value: period,
-                    child: Text(period.toString().split('.').last, style: TextStyle(color: AppColors.textPrimary)),
+                    child: Text(period.toString().split('.').last, style: const TextStyle(color: AppColors.textPrimary)),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -279,7 +279,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
                     _updateDates();
                   });
                 },
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Period',
                   labelStyle: TextStyle(color: AppColors.textSecondary),
                   focusedBorder: UnderlineInputBorder(
@@ -292,11 +292,11 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
         ),
         actions: [
           TextButton(
-            child: Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
+            child: const Text('Cancel', style: TextStyle(color: AppColors.textSecondary)),
             onPressed: () => Navigator.pop(context),
           ),
           ElevatedButton(
-            child: Text('Create'),
+            child: const Text('Create'),
             onPressed: () => _createGoal(context),
           ),
         ],
@@ -323,10 +323,10 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
     _startDate = DateTime.now();
     switch (_selectedPeriod) {
       case GoalPeriod.daily:
-        _endDate = _startDate.add(Duration(days: 1));
+        _endDate = _startDate.add(const Duration(days: 1));
         break;
       case GoalPeriod.weekly:
-        _endDate = _startDate.add(Duration(days: 7));
+        _endDate = _startDate.add(const Duration(days: 7));
         break;
       case GoalPeriod.monthly:
         _endDate = DateTime(_startDate.year, _startDate.month + 1, _startDate.day);
@@ -340,7 +340,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   void _createGoal(BuildContext context) {
     if (_targetController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Please enter a target value', style: TextStyle(color: AppColors.textPrimary))),
+        const SnackBar(content: Text('Please enter a target value', style: TextStyle(color: AppColors.textPrimary))),
       );
       return;
     }
@@ -357,7 +357,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text('Invalid target value', style: TextStyle(color: AppColors.textPrimary)),
         ),
       );

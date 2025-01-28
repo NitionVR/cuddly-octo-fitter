@@ -1,3 +1,5 @@
+import 'package:mobile_project_fitquest/domain/entities/training/training_week.dart';
+
 import '../../enums/difficulty_level.dart';
 import '../../enums/workout_intensity.dart';
 import '../../enums/workout_type.dart';
@@ -14,6 +16,7 @@ class TrainingPlan {
   final Map<String, dynamic>? metadata;
   final bool isCustom;
   final String? createdBy;
+  final List<String> _completedWorkouts; // Add this field
 
   TrainingPlan({
     required this.id,
@@ -27,7 +30,12 @@ class TrainingPlan {
     this.metadata,
     this.isCustom = false,
     this.createdBy,
-  });
+    List<String>? completedWorkouts, // Add this parameter
+  }) : _completedWorkouts = completedWorkouts ?? [];
+
+  List<String> get completedWorkouts => List.unmodifiable(_completedWorkouts);
+
+  bool isWorkoutCompleted(String workoutId) => _completedWorkouts.contains(workoutId);
 
   Map<String, dynamic> toMap() {
     return {
@@ -42,6 +50,7 @@ class TrainingPlan {
       'metadata': metadata,
       'isCustom': isCustom,
       'createdBy': createdBy,
+      'completedWorkouts': _completedWorkouts, // Add this field
     };
   }
 
@@ -64,89 +73,72 @@ class TrainingPlan {
       metadata: map['metadata'],
       isCustom: map['isCustom'] ?? false,
       createdBy: map['createdBy'],
+      completedWorkouts: (map['completedWorkouts'] as List?)
+          ?.map((e) => e.toString())
+          .toList() ?? [], // Add this field
+    );
+  }
+
+  // Helper method to get progress
+  double get progress {
+    final totalWorkouts = weeks
+        .expand((week) => week.workouts)
+        .length;
+    return totalWorkouts > 0 ? _completedWorkouts.length / totalWorkouts : 0.0;
+  }
+
+  // Helper method to get completed workouts count
+  int get completedWorkoutsCount => _completedWorkouts.length;
+
+  // Helper method to get total workouts count
+  int get totalWorkouts => weeks.expand((week) => week.workouts).length;
+
+  // Create a new instance with updated completed workouts
+  TrainingPlan copyWith({
+    String? id,
+    String? title,
+    String? description,
+    int? durationWeeks,
+    DifficultyLevel? difficulty,
+    List<TrainingWeek>? weeks,
+    WorkoutType? type,
+    String? imageUrl,
+    Map<String, dynamic>? metadata,
+    bool? isCustom,
+    String? createdBy,
+    List<String>? completedWorkouts,
+  }) {
+    return TrainingPlan(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      durationWeeks: durationWeeks ?? this.durationWeeks,
+      difficulty: difficulty ?? this.difficulty,
+      weeks: weeks ?? this.weeks,
+      type: type ?? this.type,
+      imageUrl: imageUrl ?? this.imageUrl,
+      metadata: metadata ?? this.metadata,
+      isCustom: isCustom ?? this.isCustom,
+      createdBy: createdBy ?? this.createdBy,
+      completedWorkouts: completedWorkouts ?? List.from(_completedWorkouts),
+    );
+  }
+
+  // Method to mark a workout as completed
+  TrainingPlan markWorkoutCompleted(String workoutId) {
+    if (_completedWorkouts.contains(workoutId)) return this;
+    return copyWith(
+      completedWorkouts: [..._completedWorkouts, workoutId],
+    );
+  }
+
+  // Method to mark a workout as not completed
+  TrainingPlan markWorkoutNotCompleted(String workoutId) {
+    if (!_completedWorkouts.contains(workoutId)) return this;
+    return copyWith(
+      completedWorkouts: _completedWorkouts.where((id) => id != workoutId).toList(),
     );
   }
 }
 
-class TrainingWeek {
-  final int weekNumber;
-  final List<PlannedWorkout> workouts;
-  final String? notes;
-
-  TrainingWeek({
-    required this.weekNumber,
-    required this.workouts,
-    this.notes,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'weekNumber': weekNumber,
-      'workouts': workouts.map((w) => w.toMap()).toList(),
-      'notes': notes,
-    };
-  }
-
-  factory TrainingWeek.fromMap(Map<String, dynamic> map) {
-    return TrainingWeek(
-      weekNumber: map['weekNumber'],
-      workouts: (map['workouts'] as List)
-          .map((w) => PlannedWorkout.fromMap(w))
-          .toList(),
-      notes: map['notes'],
-    );
-  }
-}
-
-class PlannedWorkout {
-  final int dayOfWeek;
-  final String title;
-  final WorkoutType type;
-  final Duration targetDuration;
-  final double? targetDistance;
-  final String? targetPace;
-  final String description;
-  final WorkoutIntensity intensity;
-
-  PlannedWorkout({
-    required this.dayOfWeek,
-    required this.title,
-    required this.type,
-    required this.targetDuration,
-    this.targetDistance,
-    this.targetPace,
-    required this.description,
-    required this.intensity,
-  });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'dayOfWeek': dayOfWeek,
-      'title': title,
-      'type': type.toString(),
-      'targetDuration': targetDuration.inMinutes,
-      'targetDistance': targetDistance,
-      'targetPace': targetPace,
-      'description': description,
-      'intensity': intensity.toString(),
-    };
-  }
-
-  factory PlannedWorkout.fromMap(Map<String, dynamic> map) {
-    return PlannedWorkout(
-      dayOfWeek: map['dayOfWeek'],
-      title: map['title'],
-      type: WorkoutType.values.firstWhere(
-            (e) => e.toString() == map['type'],
-      ),
-      targetDuration: Duration(minutes: map['targetDuration']),
-      targetDistance: map['targetDistance'],
-      targetPace: map['targetPace'],
-      description: map['description'],
-      intensity: WorkoutIntensity.values.firstWhere(
-            (e) => e.toString() == map['intensity'],
-      ),
-    );
-  }
-}
 

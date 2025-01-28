@@ -141,7 +141,7 @@ class TrackingRepository {
       }
     } catch (e) {
       print('Error during sync: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -151,7 +151,7 @@ class TrackingRepository {
       await localDataSource.mergeFirestoreData(userId, firestoreData);
     } catch (e) {
       print('Error merging Firestore data: $e');
-      throw e;
+      rethrow;
     }
   }
 

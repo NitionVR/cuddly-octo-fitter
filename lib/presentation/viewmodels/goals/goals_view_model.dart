@@ -5,33 +5,82 @@ import '../../../domain/enums/goal_type.dart';
 import '../../../domain/repository/goals/goals_repository.dart';
 
 class GoalsViewModel extends ChangeNotifier {
-  final GoalsRepository _goalsRepository;
-  final String userId;
+  final GoalsRepository? _goalsRepository;
+  final String _userId;
 
   List<FitnessGoal> _activeGoals = [];
   bool _isLoading = false;
   String? _error;
+  bool _isInitialized = false;
+  Stream<List<FitnessGoal>>? _goalsStream;
 
-  GoalsViewModel(this._goalsRepository, this.userId) {
-    _initializeGoals();
-  }
+  GoalsViewModel(this._goalsRepository, this._userId);
 
+  // Getters
   List<FitnessGoal> get activeGoals => _activeGoals;
   bool get isLoading => _isLoading;
   String? get error => _error;
+  bool get isInitialized => _isInitialized && _goalsRepository != null;
+  Stream<List<FitnessGoal>>? get goalsStream => _goalsStream;
 
-  Future<void> _initializeGoals() async {
-    _isLoading = true;
-    notifyListeners();
+  Future<void> initialize() async {
+    if (_goalsRepository == null || _userId.isEmpty) {
+      print('Goals: Cannot initialize - missing dependencies');
+      return;
+    }
+
+    if (_isInitialized) {
+      print('Goals: Already initialized');
+      return;
+    }
+
+    print('Goals: Starting initialization');
+    _setLoading(true);
 
     try {
-      _activeGoals = await _goalsRepository.getUserGoals(userId);
+      await _loadGoals();
+      _setupGoalsStream();
+      _isInitialized = true;
+      print('Goals: Initialization complete');
+    } catch (e) {
+      print('Goals: Initialization failed - $e');
+      _error = 'Initialization failed: $e';
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  void _setLoading(bool loading) {
+    if (_isLoading != loading) {
+      _isLoading = loading;
+      notifyListeners();
+    }
+  }
+
+  void clear() {
+    _activeGoals = [];
+    _error = null;
+    _isLoading = false;
+    _isInitialized = false;
+    _goalsStream = null;
+    notifyListeners();
+  }
+
+  void _setupGoalsStream() {
+    if (_goalsRepository == null) return;
+    _goalsStream = _goalsRepository!.activeGoalsStream(_userId);
+  }
+
+  Future<void> _loadGoals() async {
+    if (_goalsRepository == null) return;
+
+    try {
+      _activeGoals = await _goalsRepository!.getUserGoals(_userId);
       _error = null;
     } catch (e) {
+      print('Error loading goals: $e');
       _error = 'Failed to load goals: $e';
-    } finally {
-      _isLoading = false;
-      notifyListeners();
+      _activeGoals = [];
     }
   }
 
@@ -42,10 +91,18 @@ class GoalsViewModel extends ChangeNotifier {
     required DateTime startDate,
     required DateTime endDate,
   }) async {
+    if (_goalsRepository == null) {
+      _error = 'Service not initialized';
+      notifyListeners();
+      return;
+    }
+
+    _setLoading(true);
+
     try {
       final goal = FitnessGoal(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
-        userId: userId,
+        userId: _userId,
         type: type,
         period: period,
         target: target,
@@ -54,37 +111,94 @@ class GoalsViewModel extends ChangeNotifier {
         lastUpdated: DateTime.now(),
       );
 
-      await _goalsRepository.createGoal(goal);
-      await _initializeGoals();
+      await _goalsRepository!.createGoal(goal);
+      await _loadGoals();
     } catch (e) {
       _error = 'Failed to create goal: $e';
       notifyListeners();
+    } finally {
+      _setLoading(false);
     }
   }
 
   Future<void> updateGoalProgress(String goalId, double progress) async {
+    if (_goalsRepository == null) {
+      _error = 'Service not initialized';
+      notifyListeners();
+      return;
+    }
+
+    _setLoading(true);
+
     try {
-      await _goalsRepository.updateGoalProgress(goalId, progress);
-      await _initializeGoals();
+      await _goalsRepository!.updateGoalProgress(_userId, goalId, progress);
+      await _loadGoals();
     } catch (e) {
       _error = 'Failed to update goal progress: $e';
       notifyListeners();
+    } finally {
+      _setLoading(false);
     }
   }
 
   Future<void> deleteGoal(String goalId) async {
-    try {
-      await _goalsRepository.deleteGoal(goalId);
-      _activeGoals.removeWhere((goal) => goal.id == goalId);
+    if (_goalsRepository == null) {
+      _error = 'Service not initialized';
       notifyListeners();
+      return;
+    }
+
+    _setLoading(true);
+
+    try {
+      await _goalsRepository!.deleteGoal(_userId, goalId);
+      _activeGoals.removeWhere((goal) => goal.id == goalId);
     } catch (e) {
       _error = 'Failed to delete goal: $e';
-      notifyListeners();
+    } finally {
+      _setLoading(false);
+    }
+  }
+
+  Future<void> refreshGoals() async {
+    if (!isInitialized) {
+      await initialize();
+    } else {
+      _setLoading(true);
+      try {
+        await _loadGoals();
+      } finally {
+        _setLoading(false);
+      }
     }
   }
 
   void clearError() {
-    _error = null;
-    notifyListeners();
+    if (_error != null) {
+      _error = null;
+      notifyListeners();
+    }
+  }
+
+  // Helper methods
+  List<FitnessGoal> getGoalsByType(GoalType type) {
+    return _activeGoals.where((goal) => goal.type == type).toList();
+  }
+
+  List<FitnessGoal> getGoalsByPeriod(GoalPeriod period) {
+    return _activeGoals.where((goal) => goal.period == period).toList();
+  }
+
+  double getCompletionRate() {
+    if (_activeGoals.isEmpty) return 0.0;
+    final completed = _activeGoals.where((goal) =>
+    goal.currentProgress >= goal.target).length;
+    return completed / _activeGoals.length;
+  }
+
+  @override
+  void dispose() {
+    clear();
+    super.dispose();
   }
 }

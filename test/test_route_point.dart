@@ -14,9 +14,9 @@ void main (){
 
     test('should create RoutePoint data object with specified values', () {
         // Given some location data with known gps coordinates and time
-        final position = LatLng(51.5074, -0.1278);
+        const position = LatLng(51.5074, -0.1278);
         final timestamp = DateTime(2024,12,4,14,30); // 4th December 2024, 2:30 pm
-        final accuracy = 5.0;
+        const accuracy = 5.0;
 
         //when we create a RoutePoint object with this data
         final routePoint = RoutePoint(position,timestamp,accuracy:accuracy);
@@ -31,7 +31,7 @@ void main (){
     // Default accuracy test
     test('should use infinity as default accuracy when not specified', () {
     // Given position and time (maybe our GPS didn't report accuracy)
-        final position = LatLng(40.7128, -74.0060); // NYC coordinates
+        const position = LatLng(40.7128, -74.0060); // NYC coordinates
         final timestamp = DateTime.now();
 
         // When we create a RoutePoint without specifying accuracy
@@ -45,13 +45,13 @@ void main (){
     test('should be usable for tracking movement over time', () {
         // Given two points representing movement
         final point1 = RoutePoint(
-        LatLng(51.5074, -0.1278), // Soweto
+        const LatLng(51.5074, -0.1278), // Soweto
         DateTime(2024, 1, 1, 12, 0),
             accuracy: 10.0
         );
 
         final point2 = RoutePoint(
-        LatLng(51.5074, -0.1268), // Move east
+        const LatLng(51.5074, -0.1268), // Move east
         DateTime(2024, 1, 1, 12, 5),
             accuracy: 8.0
         );

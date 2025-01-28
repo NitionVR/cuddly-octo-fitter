@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mobile_project_fitquest/data/datasources/local/database_helper.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 void main() {
@@ -130,7 +129,7 @@ void main() {
   group('Database Operations', () {
     test('should successfully insert and retrieve user-specific data', () async {
       final db = await dbHelper.database;
-      final userId = 'test_user';
+      const userId = 'test_user';
 
       await db.insert('tracking_history', {
         'user_id': userId,

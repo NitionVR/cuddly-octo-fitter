@@ -4,115 +4,91 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:path/path.dart';
 import '../../../data/datasources/local/location_service.dart';
 import '../../../domain/entities/tracking/route_point.dart';
 import '../../../domain/repository/tracking/tracking_repository.dart';
 import '../../../domain/usecases/location_tracking_use_case.dart';
 import '../auth/auth_viewmodel.dart';
-import 'package:provider/provider.dart';
 
 class MapViewModel extends ChangeNotifier {
-  final LocationTrackingUseCase _locationTrackingUseCase;
+  final LocationTrackingUseCase? _locationTrackingUseCase;
+  final TrackingRepository? _trackingRepository;
+  final LocationService? _locationService;
+  final AuthViewModel? _authViewModel;
   final MapController _mapController;
-  final LocationService _locationService;
-  final AuthViewModel _authViewModel;
-
-  final TrackingRepository trackingRepository;
 
   List<LatLng> _route = [];
   List<Polyline> _polylines = [];
   List<Marker> _markers = [];
+  List<Map<String, dynamic>> _history = [];
   double _totalDistance = 0.0;
   DateTime? _startTime;
   String _pace = "0:00 min/km";
   Timer? _timer;
-  bool _isReplaying = false;
-  bool _showGpsSignal = true;
   int _gpsAccuracy = 0;
   bool _isPaused = false;
+  bool _isTracking = false;
+  bool _showGpsSignal = true;
+  bool _isReplaying = false;
+  StreamSubscription<RoutePoint>? _locationSubscription;
 
 
   MapViewModel(
       this._locationTrackingUseCase,
-      this.trackingRepository,
+      this._trackingRepository,
       this._locationService,
       this._mapController,
       this._authViewModel,
       );
 
-  List<Map<String, dynamic>> _history = [];
-  List<Map<String, dynamic>> get history => _history;
-
-  bool _isTracking = false;
-  StreamSubscription<RoutePoint>? _locationSubscription;
-
+  // Public getters
   List<LatLng> get route => _route;
   double get totalDistance => _totalDistance;
   String get pace => _pace;
   bool get isTracking => _isTracking;
-  bool get isActivelyTracking => _isTracking && !_isPaused;
-
-  get mapController => _mapController;
-  get polylines => _polylines;
-  get markers => _markers;
-  get locationService => _locationService;
-
-  bool get isReplaying => _isReplaying;
-
-  bool get showGpsSignal => _showGpsSignal;
-
-  int get gpsAccuracy => _gpsAccuracy;
-
   bool get isPaused => _isPaused;
+  bool get showGpsSignal => _showGpsSignal;
+  int get gpsAccuracy => _gpsAccuracy;
+  bool get isReplaying => _isReplaying;
+  MapController get mapController => _mapController;
+  List<Polyline> get polylines => _polylines;
+  List<Marker> get markers => _markers;
+  List<Map<String, dynamic>> get history => _history;
 
-  set route(List<LatLng> value) {
-    _route = value;
-    notifyListeners();
-  }
+  bool get isInitialized =>
+      _locationTrackingUseCase != null &&
+          _trackingRepository != null &&
+          _locationService != null &&
+          _authViewModel != null &&
+          _mapController != null;
 
-  set startTime(DateTime? value) {
-    _startTime = value;
-    notifyListeners();
-  }
-
-  Future<void> initializeLocation(LocationService locationService) async {
-    bool serviceEnabled = await locationService.isServiceEnabled();
-    if (!serviceEnabled) {
+  // Initialization and cleanup
+  Future<void> initialize() async {
+    if (_locationService == null ||
+        _trackingRepository == null ||
+        _locationTrackingUseCase == null ||
+        _authViewModel == null) {
       return;
     }
 
-    PermissionStatus permissionGranted = await locationService.requestPermission();
-    if (permissionGranted != PermissionStatus.granted) {
-      return;
-    }
+    await _checkLocationPermissions();
+    await centerOnCurrentLocation();
+    await loadTrackingHistory();
+  }
 
-    try {
-      final LocationData location = await locationService.getCurrentLocation();
-
-      RoutePoint routePoint = RoutePoint(
-        LatLng(location.latitude!, location.longitude!),
-        DateTime.now(),
-        accuracy: location.accuracy ?? double.infinity,  // Pass accuracy from LocationData
-      );
-      _updateUserLocation(routePoint);
-
-      if (location.latitude != null && location.longitude != null) {
-        _mapController.move(
-          LatLng(location.latitude!, location.longitude!),
-          16.0, // Zoom level
-        );
-      } else {
-        _mapController.move(
-          LatLng(0.0, 0.0),
-          16.0,
-        );
-      }
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error while getting location: $e');
-      }
-    }
+  void clear() {
+    _route.clear();
+    _polylines.clear();
+    _markers.clear();
+    _totalDistance = 0.0;
+    _startTime = null;
+    _pace = "0:00 min/km";
+    _isTracking = false;
+    _isPaused = false;
+    _gpsAccuracy = 0;
+    _locationSubscription?.cancel();
+    _timer?.cancel();
+    notifyListeners();
   }
 
   @override
@@ -122,55 +98,46 @@ class MapViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  void toggleTracking() {
-    if (!_isTracking) {
-      // Start new tracking session
-      _isTracking = true;
-      _isPaused = false;
-      _startTracking();
-    } else {
-      // If tracking is active, pause it
-      pauseTracking();
+  // Location permissions
+  Future<void> _checkLocationPermissions() async {
+    try {
+      final serviceEnabled = await _locationService?.isServiceEnabled();
+      if (!serviceEnabled!) return;
+
+      final permission = await _locationService?.requestPermission();
+      if (permission != PermissionStatus.granted) return;
+    } catch (e) {
+      _handleError('Location permissions check failed: $e');
     }
-    notifyListeners();
   }
 
+  // Tracking control
+  void toggleTracking() {
+    if (_isTracking) {
+      pauseTracking();
+    } else {
+      startTracking();
+    }
+  }
 
-  void _startTracking() {
+  void startTracking() {
+    if (_isTracking || _locationTrackingUseCase == null) return;
+
+    _isTracking = true;
+    _isPaused = false;
     _startTime = DateTime.now();
     _totalDistance = 0.0;
     _route.clear();
 
-    _timer?.cancel();  // Cancel any existing timer
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-          (_) {
-        if (_isTracking) {  // Only notify if still tracking
-          notifyListeners();
-        }
-      },
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_isTracking && !_isPaused) notifyListeners();
+    });
+
+    _locationSubscription = _locationTrackingUseCase.startTracking().listen(
+      _updateUserLocation,
+      onError: (error) => _handleError('Location tracking error: $error'),
     );
 
-    // Start location tracking using LocationTrackingUseCase stream
-    _locationSubscription = _locationTrackingUseCase.startTracking().listen(_updateUserLocation);
-  }
-
-  void endTracking() {
-    if (!_isTracking) return;
-
-    _stopTracking();
-    _isTracking = false;
-    _isPaused = false;
-    notifyListeners();
-  }
-
-  void _stopTracking() {
-    saveTrackingData();
-    _locationSubscription?.cancel();
-    _locationSubscription = null;
-
-    _timer?.cancel();
-    _timer = null;
     notifyListeners();
   }
 
@@ -183,137 +150,161 @@ class MapViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // New method to resume tracking
   void resumeTracking() {
     if (!_isTracking || !_isPaused) return;
 
     _isPaused = false;
     _locationSubscription?.resume();
-    _timer = Timer.periodic(
-      const Duration(seconds: 1),
-          (_) {
-        if (isActivelyTracking) {
-          notifyListeners();
-        }
-      },
-    );
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (_isTracking && !_isPaused) notifyListeners();
+    });
     notifyListeners();
   }
 
-  Future<void> centerOnCurrentLocation() async {
-    try{
-      final location = await _locationService.getCurrentLocation();
-      if (location.latitude != null && location.longitude != null){
-        _mapController.move(LatLng(location.latitude!, location.longitude!),
-        16.0,
-        );
-      }
-    } catch(e){
-      print('Error centering on current location, $e');
-    }
-  }
+  Future<void> endTracking() async {
+    if (!_isTracking) return;
 
-  void _updateUserLocation(RoutePoint routePoint) {
-    _gpsAccuracy = routePoint.accuracy.round();
-
-    // Only filter very poor accuracy points
-    if (routePoint.accuracy > 1300) { // note this is an experiment value
-      print("Skipping point due to poor accuracy: ${routePoint.accuracy}m");
-      return;
-    }
-
-    if (_route.isNotEmpty) {
-      final lastPoint = _route.last;
-      final distance = Distance().as(
-        LengthUnit.Meter,
-        lastPoint,
-        routePoint.position,
-      );
-
-      // Filter out obviously erroneous points
-      if (distance > 100.0) {  // Allow larger movements but filter extreme jumps
-        print("Skipping suspicious jump: $distance meters");
-        return;
-      }
-
-      // Update total distance if we're actively tracking
-      if (isActivelyTracking && distance >= 1.0) {  // Count movements of 1m or more
-        _totalDistance += distance;
-
-        // Update pace calculation
-        if (_startTime != null) {
-          final elapsedMinutes = DateTime.now().difference(_startTime!).inSeconds / 60.0;
-          if (_totalDistance > 0) {  // Prevent division by zero
-            final paceMinutes = elapsedMinutes / (_totalDistance / 1000.0);
-            final paceMin = paceMinutes.floor();
-            final paceSec = (paceMinutes % 1 * 60).round();
-            _pace = "$paceMin:${paceSec.toString().padLeft(2, '0')}";
-          }
-        }
-      }
-    }
-
-    // Add point to route if tracking is active
-    if (isActivelyTracking) {
-      _route.add(routePoint.position);
-
-      // Update polyline with smoothed route
-      _polylines = [
-        Polyline(
-          points: _smoothRoute(_route),
-          color: Colors.blue,
-          strokeWidth: 4.0,
-        ),
-      ];
-
-      // Update current position marker
-      _markers = [
-        Marker(
-          width: 40.0,
-          height: 40.0,
-          point: routePoint.position,
-          builder: (ctx) => const Icon(
-            Icons.navigation,
-            color: Colors.red,
-            size: 20.0,
-          ),
-        ),
-      ];
-
-      // Auto-center map occasionally
-      if (_route.length % 5 == 0) {
-        _mapController.move(routePoint.position, _mapController.zoom);
-      }
-
+    try {
+      await saveTrackingData();
+      _locationSubscription?.cancel();
+      _timer?.cancel();
+      _isTracking = false;
+      _isPaused = false;
       notifyListeners();
+    } catch (e) {
+      _handleError('Failed to end tracking: $e');
     }
   }
 
-  List<LatLng> _smoothRoute(List<LatLng> points, {int windowSize = 3}) {
-    if (points.length < windowSize) return points;
+  // Location updates
+  void _updateUserLocation(RoutePoint routePoint) {
+    try {
+      _gpsAccuracy = routePoint.accuracy.round();
 
-    List<LatLng> smoothed = [];
-    for (int i = 0; i < points.length; i++) {
-      if (i < windowSize ~/ 2 || i >= points.length - windowSize ~/ 2) {
-        smoothed.add(points[i]);
-        continue;
+      if (_shouldFilterPoint(routePoint)) return;
+
+      if (isActivelyTracking) {
+        _updateRouteData(routePoint);
+        _updateMapDisplay(routePoint);
+        _updatePaceCalculation();
+        notifyListeners();
       }
-
-      double latSum = 0, lngSum = 0;
-      for (int j = i - windowSize ~/ 2; j <= i + windowSize ~/ 2; j++) {
-        latSum += points[j].latitude;
-        lngSum += points[j].longitude;
-      }
-
-      smoothed.add(LatLng(
-        latSum / windowSize,
-        lngSum / windowSize,
-      ));
+    } catch (e) {
+      _handleError('Location update failed: $e');
     }
-
-    return smoothed;
   }
 
+  bool _shouldFilterPoint(RoutePoint point) {
+    if (point.accuracy > 1300) return true;
+    if (_route.isEmpty) return false;
+
+    final distance = _calculateDistance(_route.last, point.position);
+    return distance > 100;
+  }
+
+  void _updateRouteData(RoutePoint point) {
+    _route.add(point.position);
+    _totalDistance += _calculateDistance(_route.last, point.position);
+    _polylines = [_createSmoothedPolyline()];
+    _markers = [_createPositionMarker(point.position)];
+  }
+
+  void _updateMapDisplay(RoutePoint point) {
+    if (_route.length % 5 == 0) {
+      _mapController.move(point.position, _mapController.zoom);
+    }
+  }
+
+  Polyline _createSmoothedPolyline() {
+    return Polyline(
+      points: _smoothRoute(_route),
+      color: Colors.blue,
+      strokeWidth: 4.0,
+    );
+  }
+
+  Marker _createPositionMarker(LatLng position) {
+    return Marker(
+      width: 40.0,
+      height: 40.0,
+      point: position,
+      builder: (ctx) => const Icon(Icons.navigation, color: Colors.red, size: 20.0),
+    );
+  }
+
+  // Pace calculation
+  void _updatePaceCalculation() {
+    if (_startTime == null || _totalDistance == 0) return;
+
+    final elapsedSeconds = DateTime.now().difference(_startTime!).inSeconds;
+    final paceSeconds = (elapsedSeconds / (_totalDistance / 1000)).round();
+    _pace = '${(paceSeconds ~/ 60)}:${(paceSeconds % 60).toString().padLeft(2, '0')} min/km';
+  }
+
+  // Data persistence
+  Future<void> saveTrackingData() async {
+    final user = _authViewModel?.currentUser;
+    if (user == null) throw Exception('User not authenticated');
+
+    await _trackingRepository?.saveTrackingData(
+      userId: user.id,
+      timestamp: DateTime.now(),
+      route: _route,
+      totalDistance: _totalDistance,
+      duration: DateTime.now().difference(_startTime!).inSeconds,
+      avgPace: _pace,
+    );
+  }
+
+  Future<void> clearTrackingHistory() async {
+    final user = _authViewModel?.currentUser;
+    if (user == null) return;
+
+    try {
+      await _trackingRepository?.clearTrackingHistory(user.id);
+      _history.clear();
+      notifyListeners();
+    } catch (e) {
+      _handleError('Failed to clear history: $e');
+    }
+  }
+
+  Future<void> loadTrackingHistory() async {
+    final user = _authViewModel?.currentUser;
+    if (user == null) return;
+
+    try {
+      _history = (await _trackingRepository?.fetchTrackingHistory(userId: user.id))!;
+      notifyListeners();
+    } catch (e) {
+      _handleError('Failed to load tracking history: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getLastThreeActivities() async {
+    final user = _authViewModel?.currentUser;
+    if (user == null) return [];
+
+    try {
+      final fullHistory = await _trackingRepository?.fetchTrackingHistory(userId: user.id);
+      return fullHistory?.take(3).toList() ?? [];
+    } catch (e) {
+      _handleError('Failed to get activities: $e');
+      return [];
+    }
+  }
+
+  // Helpers
+  Future<void> centerOnCurrentLocation() async {
+    try {
+      final location = await _locationService?.getCurrentLocation();
+      if (location?.latitude != null && location?.longitude != null) {
+        _mapController.move(LatLng(location!.latitude!, location.longitude!), 16.0);
+      }
+    } catch (e) {
+      _handleError('Centering failed: $e');
+    }
+  }
 
   String getElapsedTime() {
     if (_startTime == null || !_isTracking) return "0:00";
@@ -323,67 +314,33 @@ class MapViewModel extends ChangeNotifier {
     return "$minutes:${seconds.toString().padLeft(2, '0')}";
   }
 
+  double _calculateDistance(LatLng a, LatLng b) {
+    return const Distance().as(LengthUnit.Meter, a, b);
+  }
 
-  Future<void> saveTrackingData() async {
-    try {
-      final userId = _authViewModel.currentUser?.id;
-      if (userId == null) {
-        print('No user logged in');
-        return;
+  List<LatLng> _smoothRoute(List<LatLng> points, {int windowSize = 3}) {
+    if (points.length < windowSize) return points;
+
+    return points.asMap().entries.map((entry) {
+      final i = entry.key;
+      if (i < windowSize ~/ 2 || i >= points.length - windowSize ~/ 2) {
+        return entry.value;
       }
 
-      await trackingRepository.saveTrackingData(
-        userId: userId,
-        timestamp: DateTime.now(),
-        route: _route,
-        totalDistance: _totalDistance,
-        duration: _startTime != null
-            ? DateTime.now().difference(_startTime!).inSeconds
-            : 0,
-        avgPace: _pace,
-      );
-    } catch (e) {
-      print('Error saving tracking data: $e');
-    }
+      final window = points.sublist(i - windowSize ~/ 2, i + windowSize ~/ 2 + 1);
+      final avgLat = window.map((p) => p.latitude).reduce((a, b) => a + b) / windowSize;
+      final avgLng = window.map((p) => p.longitude).reduce((a, b) => a + b) / windowSize;
+
+      return LatLng(avgLat, avgLng);
+    }).toList();
   }
 
-  Future<void> clearTrackingHistory() async {
-    final userId = _authViewModel.currentUser?.id;
-    if (userId == null) {
-      print('No user logged in');
-      return;
-    }
-
-    await trackingRepository.clearTrackingHistory(userId);
-    _history = [];
-    notifyListeners();
+  void _handleError(String message) {
+    if (kDebugMode) print(message);
+    // Consider adding error state notification to UI
   }
 
-  Future<void> loadTrackingHistory() async {
-    final userId = _authViewModel.currentUser?.id;
-    if (userId == null) {
-      print('No user logged in');
-      return;
-    }
+  bool get isActivelyTracking => _isTracking && !_isPaused;
 
-    _history = await trackingRepository.fetchTrackingHistory(userId: userId);
-    notifyListeners();
-  }
-
-  Future<List<Map<String, dynamic>>> getLastThreeActivities() async {
-    final userId = _authViewModel.currentUser?.id;
-    if (userId == null) {
-      print('No user logged in');
-      return [];
-    }
-
-    final history = await trackingRepository.fetchTrackingHistory(userId: userId);
-    if (history.isEmpty) {
-      return [];
-    }
-    print(history.take(3).toList()); // manual logging
-    return history.take(3).toList();
-  }
 
 }
-

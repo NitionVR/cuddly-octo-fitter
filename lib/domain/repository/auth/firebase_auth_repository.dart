@@ -7,6 +7,7 @@ import 'auth_repository.dart';
 class FirebaseAuthRepository implements AuthRepository {
   final firebase_auth.FirebaseAuth _firebaseAuth;
   final FirebaseFirestore _firestore;
+
   FirebaseAuthRepository({
     firebase_auth.FirebaseAuth? firebaseAuth,
     FirebaseFirestore? firestore,
@@ -16,7 +17,8 @@ class FirebaseAuthRepository implements AuthRepository {
   @override
   Future<User> signInWithEmail(String email, String password) async {
     try {
-      // First sign in with Firebase Auth
+      print('Starting sign in process for: $email');
+
       final credential = await _firebaseAuth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -26,43 +28,81 @@ class FirebaseAuthRepository implements AuthRepository {
         throw Exception('No user found');
       }
 
-      // Check if user document exists in Firestore
-      final userDoc = await _firestore.collection('users').doc(credential.user!.uid).get();
+      print('Firebase Auth successful. UID: ${credential.user!.uid}');
 
-      if (!userDoc.exists) {
-        // Create user document if it doesn't exist
-        final newUser = User(
+      try {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .get();
+
+        final now = DateTime.now();
+        final nowStr = now.toIso8601String();
+
+        if (!userDoc.exists) {
+          print('Creating new user document');
+          final newUserData = {
+            'email': email,
+            'displayName': null,
+            'createdAt': nowStr,
+            'lastLogin': nowStr,
+          };
+
+          await _firestore
+              .collection('users')
+              .doc(credential.user!.uid)
+              .set(newUserData);
+
+          return User(
+            id: credential.user!.uid,
+            email: email,
+            displayName: null,
+            createdAt: now,
+            lastLogin: now,
+          );
+        }
+
+        print('Updating existing user');
+        await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .update({'lastLogin': nowStr});
+
+        final userData = userDoc.data()!;
+        return User(
+          id: credential.user!.uid,
+          email: email,
+          displayName: userData['displayName'] as String?,
+          createdAt: DateTime.parse(userData['createdAt'] as String),
+          lastLogin: now,
+        );
+
+      } on FirebaseException catch (e) {
+        print('Firestore error: ${e.code} - ${e.message}');
+        // Return basic user if Firestore fails
+        return User(
           id: credential.user!.uid,
           email: email,
           displayName: null,
           createdAt: DateTime.now(),
           lastLogin: DateTime.now(),
         );
-
-        await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());
-        return newUser;
       }
 
-      // Update last login time
-      await _updateLastLogin(credential.user!.uid);
-
-      // Return existing user data
-      return User.fromMap({
-        ...userDoc.data()!,
-        'id': credential.user!.uid,
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Sign in error: $e');
-      }
+    } on firebase_auth.FirebaseAuthException catch (e) {
+      print('Firebase Auth Exception: ${e.code} - ${e.message}');
       throw _handleAuthError(e);
+    } catch (e) {
+      print('General Exception: $e');
+      throw Exception('Authentication failed');
     }
   }
 
   @override
   Future<User> signUpWithEmail(String email, String password) async {
     try {
-      // Create auth account
+      print('Starting sign up process for: $email');
+
       final credential = await _firebaseAuth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -72,93 +112,128 @@ class FirebaseAuthRepository implements AuthRepository {
         throw Exception('Failed to create user');
       }
 
-      // Create user data
-      final user = User(
-        id: credential.user!.uid,
-        email: email,
-        displayName: null,
-        createdAt: DateTime.now(),
-        lastLogin: DateTime.now(),
-      );
+      final now = DateTime.now();
+      final nowStr = now.toIso8601String();
 
-      // Create Firestore document
-      await _firestore.collection('users').doc(user.id).set(user.toMap());
+      final userData = {
+        'email': email,
+        'displayName': null,
+        'createdAt': nowStr,
+        'lastLogin': nowStr,
+      };
 
-      if (kDebugMode) {
-        print('User document created successfully: ${user.id}');
+      try {
+        await _firestore
+            .collection('users')
+            .doc(credential.user!.uid)
+            .set(userData);
+
+        print('User document created successfully');
+
+        return User(
+          id: credential.user!.uid,
+          email: email,
+          displayName: null,
+          createdAt: now,
+          lastLogin: now,
+        );
+      } on FirebaseException catch (e) {
+        print('Firestore error during signup: ${e.code} - ${e.message}');
+        // Return basic user if Firestore fails
+        return User(
+          id: credential.user!.uid,
+          email: email,
+          displayName: null,
+          createdAt: now,
+          lastLogin: now,
+        );
       }
-      return user;
     } catch (e) {
-      if (kDebugMode) {
-        print('Sign up error: $e');
-      }
+      print('Sign up error: $e');
       throw _handleAuthError(e);
     }
   }
 
   @override
   Stream<User?> get authStateChanges {
-    return _firebaseAuth.authStateChanges().asyncMap((firebaseUser) async {
-      if (firebaseUser == null) return null;
-
-      try {
-        final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-
-        if (!userDoc.exists) {
-          // Create user document if it doesn't exist
-          final newUser = User(
-            id: firebaseUser.uid,
-            email: firebaseUser.email!,
-            displayName: null,
-            createdAt: DateTime.now(),
-            lastLogin: DateTime.now(),
-          );
-
-          await _firestore.collection('users').doc(newUser.id).set(newUser.toMap());
-          return newUser;
-        }
-
-        return User.fromMap({
-          ...userDoc.data()!,
-          'id': firebaseUser.uid,
-        });
-      } catch (e) {
-        if (kDebugMode) {
-          print('Auth state change error: $e');
-        }
+    return _firebaseAuth.authStateChanges().map((firebaseUser) {
+      if (firebaseUser == null) {
+        print('Auth state change: No user');
         return null;
       }
+
+      print('Auth state change: User authenticated ${firebaseUser.uid}');
+
+      // Return basic user information without Firestore access
+      return User(
+        id: firebaseUser.uid,
+        email: firebaseUser.email ?? '',
+        displayName: null,
+        createdAt: DateTime.now(),
+        lastLogin: DateTime.now(),
+      );
     });
   }
 
   @override
   Future<User?> getCurrentUser() async {
-    final firebaseUser = _firebaseAuth.currentUser;
-    if (firebaseUser == null) return null;
-
     try {
-      final userDoc = await _firestore.collection('users').doc(firebaseUser.uid).get();
-
-      if (!userDoc.exists) {
+      final firebaseUser = _firebaseAuth.currentUser;
+      if (firebaseUser == null) {
+        print('No current user');
         return null;
       }
 
-      return User.fromMap({
-        ...userDoc.data()!,
-        'id': firebaseUser.uid,
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Get current user error: $e');
+      try {
+        final userDoc = await _firestore
+            .collection('users')
+            .doc(firebaseUser.uid)
+            .get();
+
+        if (!userDoc.exists) {
+          print('No user document found');
+          return User(
+            id: firebaseUser.uid,
+            email: firebaseUser.email ?? '',
+            displayName: null,
+            createdAt: DateTime.now(),
+            lastLogin: DateTime.now(),
+          );
+        }
+
+        final userData = userDoc.data()!;
+        return User(
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: userData['displayName'] as String?,
+          createdAt: DateTime.parse(userData['createdAt'] as String),
+          lastLogin: DateTime.parse(userData['lastLogin'] as String),
+        );
+      } on FirebaseException catch (e) {
+        print('Firestore error: ${e.code} - ${e.message}');
+        // Return basic user if Firestore fails
+        return User(
+          id: firebaseUser.uid,
+          email: firebaseUser.email ?? '',
+          displayName: null,
+          createdAt: DateTime.now(),
+          lastLogin: DateTime.now(),
+        );
       }
+    } catch (e) {
+      print('Get current user error: $e');
       return null;
     }
   }
 
-
   @override
   Future<void> signOut() async {
-    await _firebaseAuth.signOut();
+    try {
+      await _firebaseAuth.signOut();
+    } catch (e) {
+      print('Sign out error: $e');
+      throw Exception('Failed to sign out');
+    }
   }
 
   @override
@@ -166,37 +241,9 @@ class FirebaseAuthRepository implements AuthRepository {
     try {
       await _firebaseAuth.sendPasswordResetEmail(email: email);
     } catch (e) {
+      print('Reset password error: $e');
       throw _handleAuthError(e);
     }
-  }
-
-
-  Future<User> _getUser(String uid) async {
-    try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (!doc.exists) {
-        throw Exception('User document not found');
-      }
-
-      final data = doc.data()!;
-      // Convert Timestamp to DateTime
-      return User.fromMap({
-        ...data,
-        'id': uid,
-      });
-    } catch (e) {
-      if (kDebugMode) {
-        print('Error in _getUser: $e');
-      }
-      throw Exception('Failed to get user data');
-    }
-  }
-
-  Future<void> _updateLastLogin(String uid) async {
-    await _firestore
-        .collection('users')
-        .doc(uid)
-        .update({'lastLogin': DateTime.now().toIso8601String()});
   }
 
   Exception _handleAuthError(dynamic e) {
@@ -212,6 +259,10 @@ class FirebaseAuthRepository implements AuthRepository {
           return Exception('Invalid email address');
         case 'weak-password':
           return Exception('Password is too weak');
+        case 'operation-not-allowed':
+          return Exception('Email/password accounts are not enabled');
+        case 'too-many-requests':
+          return Exception('Too many attempts. Please try again later');
         default:
           return Exception(e.message ?? 'Authentication failed');
       }

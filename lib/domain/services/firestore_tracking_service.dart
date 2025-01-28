@@ -30,7 +30,7 @@ class FirestoreTrackingService {
       });
     } catch (e) {
       print('Error syncing to Firestore: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -61,7 +61,7 @@ class FirestoreTrackingService {
       }).toList();
     } catch (e) {
       print('Error fetching from Firestore: $e');
-      throw e;
+      rethrow;
     }
   }
 }

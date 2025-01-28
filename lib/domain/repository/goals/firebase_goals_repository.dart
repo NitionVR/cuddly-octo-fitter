@@ -5,7 +5,6 @@ import '../../../data/datasources/local/database_helper.dart';
 import '../../entities/goals/fitness_goal.dart';
 import 'goals_repository.dart';
 
-
 class FirebaseGoalsRepository implements GoalsRepository {
   final FirebaseFirestore _firestore;
   final DatabaseHelper _databaseHelper;
@@ -16,20 +15,27 @@ class FirebaseGoalsRepository implements GoalsRepository {
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
         _databaseHelper = databaseHelper ?? DatabaseHelper();
 
-  CollectionReference<Map<String, dynamic>> get _goalsCollection =>
-      _firestore.collection('goals');
+  // Updated to use subcollection
+  CollectionReference<Map<String, dynamic>> _goalsCollection(String userId) =>
+      _firestore.collection('users').doc(userId).collection('goals');
 
   @override
   Future<List<FitnessGoal>> getUserGoals(String userId) async {
     try {
-      final snapshot = await _goalsCollection
-          .where('userId', isEqualTo: userId)
+      final snapshot = await _goalsCollection(userId)
           .where('isActive', isEqualTo: true)
           .get();
 
-      return snapshot.docs
+      final goals = snapshot.docs
           .map((doc) => FitnessGoal.fromMap({...doc.data(), 'id': doc.id}))
           .toList();
+
+      // Save to local database for offline access
+      for (var goal in goals) {
+        await _saveGoalLocally(goal);
+      }
+
+      return goals;
     } catch (e) {
       if (kDebugMode) {
         print('Error fetching goals: $e');
@@ -42,7 +48,7 @@ class FirebaseGoalsRepository implements GoalsRepository {
   @override
   Future<FitnessGoal> createGoal(FitnessGoal goal) async {
     try {
-      final docRef = await _goalsCollection.add(goal.toMap());
+      final docRef = await _goalsCollection(goal.userId).add(goal.toMap());
       final newGoal = goal.copyWith(id: docRef.id);
 
       // Save to local database
@@ -60,7 +66,7 @@ class FirebaseGoalsRepository implements GoalsRepository {
   @override
   Future<void> updateGoal(FitnessGoal goal) async {
     try {
-      await _goalsCollection.doc(goal.id).update(goal.toMap());
+      await _goalsCollection(goal.userId).doc(goal.id).update(goal.toMap());
       await _saveGoalLocally(goal);
     } catch (e) {
       if (kDebugMode) {
@@ -72,13 +78,26 @@ class FirebaseGoalsRepository implements GoalsRepository {
   }
 
   @override
-  Future<void> updateGoalProgress(String goalId, double progress) async {
+  Future<void> updateGoalProgress(String userId, String goalId, double progress) async {
     try {
-      await _goalsCollection.doc(goalId).update({
+      await _goalsCollection(userId).doc(goalId).update({
         'currentProgress': progress,
         'lastUpdated': DateTime.now().toIso8601String(),
         'isCompleted': progress >= 100,
       });
+
+      // Update local database
+      final db = await _databaseHelper.database;
+      await db.update(
+        'fitness_goals',
+        {
+          'currentProgress': progress,
+          'lastUpdated': DateTime.now().toIso8601String(),
+          'isCompleted': progress >= 100 ? 1 : 0,
+        },
+        where: 'id = ?',
+        whereArgs: [goalId],
+      );
     } catch (e) {
       if (kDebugMode) {
         print('Error updating goal progress: $e');
@@ -88,8 +107,7 @@ class FirebaseGoalsRepository implements GoalsRepository {
 
   @override
   Stream<List<FitnessGoal>> activeGoalsStream(String userId) {
-    return _goalsCollection
-        .where('userId', isEqualTo: userId)
+    return _goalsCollection(userId)
         .where('isActive', isEqualTo: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
@@ -119,10 +137,10 @@ class FirebaseGoalsRepository implements GoalsRepository {
   }
 
   @override
-  Future<void> deleteGoal(String goalId) async {
+  Future<void> deleteGoal(String userId, String goalId) async {
     try {
       // Delete from Firestore
-      await _goalsCollection.doc(goalId).delete();
+      await _goalsCollection(userId).doc(goalId).delete();
 
       // Delete from local database
       final db = await _databaseHelper.database;
@@ -136,6 +154,28 @@ class FirebaseGoalsRepository implements GoalsRepository {
         print('Error deleting goal: $e');
       }
       throw Exception('Failed to delete goal');
+    }
+  }
+
+  // Helper method to sync local goals with Firestore
+  Future<void> syncGoals(String userId) async {
+    try {
+      final localGoals = await _getLocalGoals(userId);
+      final snapshot = await _goalsCollection(userId).get();
+      final remoteGoals = snapshot.docs
+          .map((doc) => FitnessGoal.fromMap({...doc.data(), 'id': doc.id}))
+          .toList();
+
+      // Update remote goals that exist locally
+      for (var localGoal in localGoals) {
+        if (!remoteGoals.any((remote) => remote.id == localGoal.id)) {
+          await _goalsCollection(userId).doc(localGoal.id).set(localGoal.toMap());
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing goals: $e');
+      }
     }
   }
 }

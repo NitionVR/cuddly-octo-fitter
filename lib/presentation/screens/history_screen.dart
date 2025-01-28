@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
-import '../viewmodels/auth/auth_viewmodel.dart';
 import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/tracking/route_replay_view_model.dart';
 import '../widgets/route_replay_widget.dart';
@@ -109,7 +108,7 @@ class HistoryScreen extends StatelessWidget {
                 title: const Text("Route Replay", style: TextStyle(color: AppColors.textPrimary)),
                 //subtitle: Text(_formatTimestamp(timestamp)),
               ),
-              body: RouteReplayWidget(),
+              body: const RouteReplayWidget(),
             ),
           ),
         ),

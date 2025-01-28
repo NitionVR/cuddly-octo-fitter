@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -114,7 +113,7 @@ class RouteReplayViewModel extends ChangeNotifier {
     if (_state.currentPointIndex > 0) {
       final lastPoint = _state.route[_state.currentPointIndex - 1];
       final currentPoint = _state.route[_state.currentPointIndex];
-      final distance = Distance().as(
+      final distance = const Distance().as(
         LengthUnit.Meter,
         lastPoint,
         currentPoint,

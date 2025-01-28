@@ -40,7 +40,7 @@ class _MainScreenState extends State<MainScreen> {
               achievementsRepository: achievementsRepository,
             ),
             const TrainingPlansScreen(),
-            MapScreen(),
+            const MapScreen(),
             const AnalyticsScreen(),
             const SettingsScreen(),
           ],

@@ -15,7 +15,7 @@ void main() {
     test('creates with default description', () {
       final segment = IntervalSegment(
         type: IntervalType.running,
-        duration: Duration(minutes: 1),
+        duration: const Duration(minutes: 1),
       );
 
       expect(segment.description, 'Run Fast');
@@ -25,14 +25,14 @@ void main() {
     test('creates with custom values', () {
       final segment = IntervalSegment(
         type: IntervalType.recovery,
-        duration: Duration(minutes: 2),
+        duration: const Duration(minutes: 2),
         targetPace: 5.5,
         description: 'Easy jog',
       );
 
       expect(segment.description, 'Easy jog');
       expect(segment.targetPace, 5.5);
-      expect(segment.duration, Duration(minutes: 2));
+      expect(segment.duration, const Duration(minutes: 2));
     });
   });
 
@@ -43,17 +43,17 @@ void main() {
         segments: [
           IntervalSegment(
             type: IntervalType.running,
-            duration: Duration(minutes: 1),
+            duration: const Duration(minutes: 1),
           ),
           IntervalSegment(
             type: IntervalType.recovery,
-            duration: Duration(minutes: 1),
+            duration: const Duration(minutes: 1),
           ),
         ],
         repetitions: 3,
       );
 
-      expect(workout.totalDuration, Duration(minutes: 6));
+      expect(workout.totalDuration, const Duration(minutes: 6));
     });
 
     test('creates basic interval template', () {
@@ -62,7 +62,7 @@ void main() {
       expect(workout.name, 'Basic Intervals');
       expect(workout.segments.length, 2);
       expect(workout.repetitions, 8);
-      expect(workout.totalDuration, Duration(minutes: 16));
+      expect(workout.totalDuration, const Duration(minutes: 16));
     });
 
     test('creates pyramid interval template', () {

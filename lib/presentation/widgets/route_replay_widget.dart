@@ -5,6 +5,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/tracking/route_replay_view_model.dart';
 
 class RouteReplayWidget extends StatelessWidget {
+  const RouteReplayWidget({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<RouteReplayViewModel>(
@@ -17,7 +19,7 @@ class RouteReplayWidget extends StatelessWidget {
                 options: MapOptions(
                   center: viewModel.route.isNotEmpty
                       ? viewModel.route[0]
-                      : LatLng(0, 0),
+                      : const LatLng(0, 0),
                   zoom: 15.0,
                 ),
                 children: [

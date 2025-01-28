@@ -5,6 +5,8 @@ import '../../viewmodels/auth/auth_viewmodel.dart';
 
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }

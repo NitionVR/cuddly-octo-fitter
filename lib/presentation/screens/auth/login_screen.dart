@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth/auth_viewmodel.dart';
-import '../home_screen.dart';
 import '../main_screen.dart';
 import 'register_screen.dart';
 
@@ -115,7 +114,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextButton(
                   onPressed: () => Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => RegisterScreen()),
+                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
                   ),
                   child: const Text('Don\'t have an account? Register'),
                 ),
@@ -134,23 +133,40 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin(BuildContext context) async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        await context.read<AuthViewModel>().signInWithEmail(
+        final authViewModel = context.read<AuthViewModel>();
+
+        print('Attempting login with email: ${_emailController.text}');
+
+        await authViewModel.signInWithEmail(
           _emailController.text,
           _passwordController.text,
         );
 
-        if (!mounted) return; // Check if widget is still mounted
+        if (!mounted) return;
 
-        Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (_) => const MainScreen()),
-              (route) => false,
-        );
+        // Add debug print
+        print('Login successful: ${authViewModel.isAuthenticated}');
+
+        if (authViewModel.isAuthenticated) {
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const MainScreen()),
+                (route) => false,
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Authentication failed. Please try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       } catch (e) {
-        if (!mounted) return; // Check if widget is still mounted
+        print('Login error: $e');
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(e.toString()),
+            content: Text('Error: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

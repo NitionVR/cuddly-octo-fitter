@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../domain/entities/training/planned_workout.dart';
 import '../../../domain/entities/training/training_plan.dart';
 import '../../../domain/enums/workout_intensity.dart';
 

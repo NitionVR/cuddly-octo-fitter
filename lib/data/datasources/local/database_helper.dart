@@ -7,7 +7,7 @@ class DatabaseHelper {
   static final DatabaseHelper _instance = DatabaseHelper._internal();
 
   static Database? _database;
-  static const int _currentVersion = 5;
+  static const int _currentVersion = 7;
   static const String _databaseName = 'tracking_history.db';
 
   factory DatabaseHelper() => _instance;
@@ -80,7 +80,6 @@ class DatabaseHelper {
       )
     ''');
 
-      // Add the new fitness_goals table
       await db.execute('''
       CREATE TABLE fitness_goals (
         id TEXT PRIMARY KEY,
@@ -96,6 +95,75 @@ class DatabaseHelper {
         isActive INTEGER DEFAULT 1,
         FOREIGN KEY (userId) REFERENCES users(id)
       )
+    ''');
+
+      await db.execute('''
+      CREATE TABLE achievements (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        type TEXT NOT NULL,
+        unlockedAt TEXT,
+        criteria TEXT,
+        icon TEXT,
+        isHidden INTEGER DEFAULT 0,
+        createdAt TEXT NOT NULL,
+        lastUpdated TEXT NOT NULL
+      )
+    ''');
+
+      await db.execute('''
+        CREATE INDEX idx_achievements_userId ON achievements(userId)
+      ''');
+
+      await db.execute('''
+        CREATE INDEX idx_achievements_unlocked ON achievements(userId, unlockedAt)
+      ''');
+
+      await db.execute('''
+      CREATE TABLE training_plans (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        title TEXT NOT NULL,
+        description TEXT NOT NULL,
+        durationWeeks INTEGER NOT NULL,
+        difficulty TEXT NOT NULL,
+        type TEXT NOT NULL,
+        weeks TEXT NOT NULL,
+        imageUrl TEXT,
+        metadata TEXT,
+        isCustom INTEGER DEFAULT 0,
+        isTemplate INTEGER DEFAULT 0,
+        isActive INTEGER DEFAULT 1,
+        startDate TEXT,
+        completedDate TEXT,
+        createdBy TEXT,
+        lastUpdated TEXT
+      )
+    ''');
+
+      // Update completed_workouts table creation
+      await db.execute('''
+      CREATE TABLE completed_workouts (
+        userId TEXT NOT NULL,
+        weekId TEXT NOT NULL,
+        workoutId TEXT NOT NULL,
+        completed INTEGER NOT NULL,
+        completedAt TEXT,
+        PRIMARY KEY (userId, workoutId)
+      )
+    ''');
+
+      // Add indexes for training plans
+      await db.execute('''
+      CREATE INDEX idx_training_plans_user 
+      ON training_plans(userId, isActive)
+    ''');
+
+      await db.execute('''
+      CREATE INDEX idx_completed_workouts_user 
+      ON completed_workouts(userId, completed)
     ''');
 
     } catch (e) {
@@ -125,7 +193,6 @@ class DatabaseHelper {
       }
 
       if (oldVersion < 4) {
-
         await db.execute('''
         CREATE TABLE IF NOT EXISTS fitness_goals (
           id TEXT PRIMARY KEY,
@@ -145,14 +212,90 @@ class DatabaseHelper {
       }
 
       if (oldVersion < 5) {
-        // drop the last_sync column if it exists
         try {
           await db.execute('ALTER TABLE tracking_history DROP COLUMN last_sync');
         } catch (e) {
-          // ignore if column not exists
+          // ignore if column doesn't exist
         }
-        // Add it back as nullable
         await db.execute('ALTER TABLE tracking_history ADD COLUMN last_sync TEXT');
+      }
+
+      if (oldVersion < 6) {
+        await db.execute('''
+        CREATE TABLE IF NOT EXISTS achievements (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          type TEXT NOT NULL,
+          unlockedAt TEXT,
+          criteria TEXT,
+          icon TEXT,
+          isHidden INTEGER DEFAULT 0,
+          createdAt TEXT NOT NULL,
+          lastUpdated TEXT NOT NULL
+        )
+        ''');
+
+        await db.execute('''
+          CREATE INDEX IF NOT EXISTS idx_achievements_userId 
+          ON achievements(userId)
+        ''');
+
+        await db.execute('''
+          CREATE INDEX IF NOT EXISTS idx_achievements_unlocked 
+          ON achievements(userId, unlockedAt)
+        ''');
+      }
+
+      if (oldVersion < 7) {
+        // Drop and recreate training_plans table with new fields
+        await db.execute('DROP TABLE IF EXISTS training_plans');
+        await db.execute('''
+        CREATE TABLE training_plans (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          durationWeeks INTEGER NOT NULL,
+          difficulty TEXT NOT NULL,
+          type TEXT NOT NULL,
+          weeks TEXT NOT NULL,
+          imageUrl TEXT,
+          metadata TEXT,
+          isCustom INTEGER DEFAULT 0,
+          isTemplate INTEGER DEFAULT 0,
+          isActive INTEGER DEFAULT 1,
+          startDate TEXT,
+          completedDate TEXT,
+          createdBy TEXT,
+          lastUpdated TEXT
+        )
+      ''');
+
+        // Drop and recreate completed_workouts table with new fields
+        await db.execute('DROP TABLE IF EXISTS completed_workouts');
+        await db.execute('''
+        CREATE TABLE completed_workouts (
+          userId TEXT NOT NULL,
+          weekId TEXT NOT NULL,
+          workoutId TEXT NOT NULL,
+          completed INTEGER NOT NULL,
+          completedAt TEXT,
+          PRIMARY KEY (userId, workoutId)
+        )
+      ''');
+
+        // Create new indexes for better performance
+        await db.execute('''
+        CREATE INDEX idx_training_plans_user 
+        ON training_plans(userId, isActive)
+      ''');
+
+        await db.execute('''
+        CREATE INDEX idx_completed_workouts_user 
+        ON completed_workouts(userId, completed)
+      ''');
       }
     } catch (e) {
       if (kDebugMode) {
@@ -162,7 +305,7 @@ class DatabaseHelper {
     }
   }
 
-
+  // Helper methods for database management
   Future<int> getDatabaseVersion() async {
     try {
       final db = await database;
@@ -188,10 +331,10 @@ class DatabaseHelper {
     }
   }
 
-  Future<List<Map<String, dynamic>>> getTableInfo() async {
+  Future<List<Map<String, dynamic>>> getTableInfo(String tableName) async {
     try {
       final db = await database;
-      return await db.rawQuery('PRAGMA table_info(tracking_history)');
+      return await db.rawQuery('PRAGMA table_info($tableName)');
     } catch (e) {
       if (kDebugMode) {
         print('Error getting table info: $e');
@@ -200,4 +343,86 @@ class DatabaseHelper {
     }
   }
 
+  // Helper methods for achievements
+  Future<bool> isTableExists(String tableName) async {
+    try {
+      final db = await database;
+      final tables = await db.query(
+        'sqlite_master',
+        where: 'type = ? AND name = ?',
+        whereArgs: ['table', tableName],
+      );
+      return tables.isNotEmpty;
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error checking table existence: $e');
+      }
+      return false;
+    }
+  }
+
+  Future<void> clearTable(String tableName) async {
+    try {
+      final db = await database;
+      await db.delete(tableName);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error clearing table: $e');
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> deleteUserData(String userId, String tableName) async {
+    try {
+      final db = await database;
+      await db.delete(
+        tableName,
+        where: 'userId = ?',
+        whereArgs: [userId],
+      );
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error deleting user data: $e');
+      }
+      rethrow;
+    }
+  }
+
+  // Specific table existence checks
+  Future<bool> isAchievementsTableExists() async {
+    return isTableExists('achievements');
+  }
+
+  Future<bool> isGoalsTableExists() async {
+    return isTableExists('fitness_goals');
+  }
+
+  Future<bool> isTrackingHistoryTableExists() async {
+    return isTableExists('tracking_history');
+  }
+
+  Future<bool> isTrainingPlansTableExists() async {
+    return isTableExists('training_plans');
+  }
+
+  Future<bool> isCompletedWorkoutsTableExists() async {
+    return isTableExists('completed_workouts');
+  }
+
+  Future<void> clearTrainingData(String userId) async {
+    final db = await database;
+    await db.transaction((txn) async {
+      await txn.delete(
+        'training_plans',
+        where: 'userId = ?',
+        whereArgs: [userId],
+      );
+      await txn.delete(
+        'completed_workouts',
+        where: 'userId = ?',
+        whereArgs: [userId],
+      );
+    });
+  }
 }

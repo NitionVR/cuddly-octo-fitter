@@ -1,26 +1,44 @@
 {
   "project_info": {
-    "project_number": "738711108804",
-    "project_id": "fitquest-e801c",
-    "storage_bucket": "fitquest-e801c.firebasestorage.app"
+    "project_number": "196475496627",
+    "project_id": "fitter-4cd3c",
+    "storage_bucket": "fitter-4cd3c.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:738711108804:android:37a0d71a2628af1405dd91",
+        "mobilesdk_app_id": "1:196475496627:android:6e0c1b17e5f7e3bf0668c6",
         "android_client_info": {
           "package_name": "com.example.mobile_project_fitquest"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "196475496627-q28iiq9ktio46ga3gdm5k1ufsbtc4n3p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.mobile_project_fitquest",
+            "certificate_hash": "af58571601017c22717d25a1ea5665fa6480bd4e"
+          }
+        },
+        {
+          "client_id": "196475496627-askifk7667jgnpsa5uhn2mp63g05nbhs.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
-          "current_key": "AIzaSyDvqi9Tg3ToVxd_X-R0lWkDmqoB0PQx9XY"
+          "current_key": "AIzaSyD79GYVxNhBZCzTQc0bvAxXHSzRLjrYGGc"
         }
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "196475496627-askifk7667jgnpsa5uhn2mp63g05nbhs.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

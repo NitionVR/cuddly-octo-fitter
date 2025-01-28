@@ -55,6 +55,7 @@ dependencies:
 
 
 
+  connectivity_plus: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

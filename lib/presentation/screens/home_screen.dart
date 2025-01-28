@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/domain/repository/achievements_repository.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/personal_record.dart';
-import '../../domain/entities/goals/fitness_goal.dart';
 import '../../domain/enums/goal_type.dart';
 import '../../domain/repository/goals/goals_repository.dart';
 import '../../domain/repository/tracking/tracking_repository.dart';
@@ -223,7 +222,7 @@ class HomeScreenContent extends StatelessWidget {
             trailing: TextButton(
               onPressed: () => Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => GoalsScreen()),
+                MaterialPageRoute(builder: (_) => const GoalsScreen()),
               ),
               child: const Text('More', style: TextStyle(color: AppColors.accentGreen)),
             ),
