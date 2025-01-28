@@ -77,6 +77,7 @@ class HomeScreenContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          const SizedBox(height: 16),
           _buildRecentActivitiesCard(context),
           const SizedBox(height: 16),
           _buildGoalsCard(context),

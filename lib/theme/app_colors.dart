@@ -6,8 +6,11 @@ class AppColors {
   static const Color backgroundEnd = Color(0xFF172554);   // blue-950
 
   // Card Colors
-  static const Color cardBackground = Color(0x1AFFFFFF);  // white/10
-  static const Color cardHoverBackground = Color(0x0DFFFFFF); // white/5
+  static const Color cardBackground = Color(0x1AFFFFFF);  // 10% white
+  static const Color cardHoverBackground = Color(0x0DFFFFFF);  // 5% white
+
+  // Optional: Add a subtle border color
+  static const Color cardBorder = Color(0x1AFFFFFF);  // 10% white
 
   // Text Colors
   static const Color textPrimary = Colors.white;

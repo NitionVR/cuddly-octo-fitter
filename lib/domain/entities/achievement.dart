@@ -23,6 +23,13 @@ class Achievement {
 
   bool get isUnlocked => unlockedAt != null;
 
+
+  bool get isNew {
+    if (unlockedAt == null) return false;
+    final difference = DateTime.now().difference(unlockedAt!);
+    return difference.inDays >= 0 && difference.inDays < 7;
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,

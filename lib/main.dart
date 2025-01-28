@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:mobile_project_fitquest/presentation/screens/loading_screen.dart';
+import 'package:mobile_project_fitquest/presentation/screens/splash_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:location/location.dart';
 
@@ -187,16 +189,34 @@ class AuthenticationWrapper extends StatefulWidget {
 
 class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
   bool _isInitializing = false;
+  bool _showSplash = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _removeSplashAfterDelay();
+  }
+
+  Future<void> _removeSplashAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) {
+      setState(() {
+        _showSplash = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_showSplash) {
+      return const SplashScreen();
+    }
+
     return Consumer<AuthViewModel>(
       builder: (context, authViewModel, _) {
         // Show loading while auth is being checked
         if (authViewModel.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
+          return const LoadingScreen(message: 'Checking authentication...');
         }
 
         // Show login screen if not authenticated
@@ -209,12 +229,9 @@ class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
           future: _initializeViewModels(context),
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) {
-              return const Scaffold(
-                body: Center(child: CircularProgressIndicator()),
-              );
+              return const LoadingScreen(message: 'Initializing services...');
             }
 
-            // Check if all ViewModels are initialized
             return Consumer4<GoalsViewModel, AchievementsViewModel, MapViewModel, TrainingPlanViewModel>(
               builder: (context, goalsVM, achievementsVM, mapVM, trainingPlanVM, _) {
                 final allInitialized = goalsVM.isInitialized &&
@@ -223,14 +240,7 @@ class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
                     trainingPlanVM.isInitialized;
 
                 if (!allInitialized) {
-                  print('Not all ViewModels initialized:');
-                  print('Goals: ${goalsVM.isInitialized}');
-                  print('Achievements: ${achievementsVM.isInitialized}');
-                  print('Map: ${mapVM.isInitialized}');
-                  print('Training: ${trainingPlanVM.isInitialized}');
-                  return const Scaffold(
-                    body: Center(child: CircularProgressIndicator()),
-                  );
+                  return const LoadingScreen(message: 'Loading your data...');
                 }
 
                 return const MainScreen();

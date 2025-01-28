@@ -35,6 +35,10 @@ class AppTheme {
         color: AppColors.textSecondary,
         fontSize: 14,
       ),
+      bodySmall: TextStyle(
+        color: AppColors.textPrimary,
+        fontSize: 14,
+      )
     ),
   );
 }
