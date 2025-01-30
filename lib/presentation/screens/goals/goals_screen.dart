@@ -520,7 +520,7 @@ class _CreateGoalDialogState extends State<CreateGoalDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      backgroundColor: AppColors.cardBackground,
+      backgroundColor: AppColors.backgroundStart,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
       ),

@@ -144,7 +144,8 @@ class _ActivityItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final timestamp = activity['timestamp'] as DateTime;
     final duration = activity['duration'] as int;
-    final totalDistance = activity['total_distance'] ?? 0.0;
+    final totalDistanceMeters = activity['total_distance'] as double? ?? 0.0;
+    final totalDistanceKm = totalDistanceMeters / 1000; // Convert to kilometers
     final avgPace = activity['avg_pace'];
 
     return GlassmorphicContainer(
@@ -158,7 +159,7 @@ class _ActivityItem extends StatelessWidget {
           Row(
             children: [
               _StatItem(
-                value: '${totalDistance.toStringAsFixed(1)}km',
+                value: '${totalDistanceKm.toStringAsFixed(2)}km', // Now correctly shows in km
                 context: context,
               ),
               const SizedBox(width: 16),
@@ -178,7 +179,6 @@ class _ActivityItem extends StatelessWidget {
     );
   }
 }
-
 class _StatItem extends StatelessWidget {
   final String value;
   final BuildContext context;

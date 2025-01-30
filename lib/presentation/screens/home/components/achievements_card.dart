@@ -7,7 +7,9 @@ import '../../../widgets/dashboard_card.dart';
 import '../utils/date_formatter.dart';
 
 class AchievementsCard extends StatelessWidget {
-  const AchievementsCard({super.key});
+  final VoidCallback? onTap;
+
+  const AchievementsCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +17,7 @@ class AchievementsCard extends StatelessWidget {
 
     return DashboardCard(
       icon: const Icon(Icons.emoji_events, color: Colors.white, size: 24),
+      onTap: onTap,
       title: 'Achievements',
       content: achievements.isLoading
           ? const _LoadingState()

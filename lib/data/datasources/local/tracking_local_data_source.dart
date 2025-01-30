@@ -14,6 +14,10 @@ class TrackingLocalDataSource {
     int? duration,
     String? avgPace,
   }) async {
+    print("=== Local Data Source Saving ===");
+    print("Total Distance to save: $totalDistance");
+    print("Route points to save: ${route.length}");
+
     if (route.isEmpty) {
       throw ArgumentError('Route cannot be empty');
     }
@@ -25,17 +29,21 @@ class TrackingLocalDataSource {
       'lng': latLng.longitude
     }).toList());
 
+    final data = {
+      'user_id': userId,
+      'timestamp': timestamp.toIso8601String(),
+      'route': serializedRoute,
+      'total_distance': totalDistance,  // Should be in meters
+      'duration': duration,
+      'avg_pace': avgPace,
+      'last_sync': DateTime.now().toIso8601String(),
+    };
+
+    print("Data to insert: $data");
+
     await db.insert(
       'tracking_history',
-      {
-        'user_id': userId,
-        'timestamp': timestamp.toIso8601String(),
-        'route': serializedRoute,
-        'total_distance': totalDistance,
-        'duration': duration,
-        'avg_pace': avgPace,
-        'last_sync': DateTime.now().toIso8601String(),
-      },
+      data,
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }

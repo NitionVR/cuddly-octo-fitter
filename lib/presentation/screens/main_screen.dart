@@ -55,37 +55,69 @@ class _MainScreenState extends State<MainScreen> {
           ],
         ),
         bottomNavigationBar: _buildBottomNavBar(),
-        floatingActionButton: _buildFloatingActionButton(),
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+
       ),
     );
   }
 
-  Widget? _buildFloatingActionButton() {
-    if (_currentIndex == 2) return null;
+  Widget _buildNavItem(int index, IconData icon, IconData activeIcon,
+      String label) {
+    final isSelected = _currentIndex == index;
 
-    return FloatingActionButton.extended(
-      onPressed: () {
-        setState(() => _currentIndex = 2);
-      },
-      icon: const Icon(Icons.play_arrow),
-      label: const Text(
-        'START RUN',
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1,
+    return SizedBox(
+      width: 70,
+      height: 60,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() => _currentIndex = index),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+                size: 24,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      backgroundColor: AppColors.buttonPrimary,
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+    );
+  }
+
+  Widget _buildRunButton() {
+    return SizedBox(
+      width: 70,
+      height: 60,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => setState(() => _currentIndex = 2),
+          child: Center(
+            child: Icon(
+              Icons.directions_run,
+              color: _currentIndex == 2 ? Colors.white : AppColors
+                  .textSecondary,
+              size: 28,
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildBottomNavBar() {
     return Container(
+      height: 60,
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: const BorderRadius.vertical(
@@ -103,57 +135,16 @@ class _MainScreenState extends State<MainScreen> {
         borderRadius: const BorderRadius.vertical(
           top: Radius.circular(16),
         ),
-        child: BottomAppBar(
-          color: Colors.transparent,
-          elevation: 0,
-          notchMargin: 8,
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
-                _buildNavItem(1, Icons.calendar_today_outlined, Icons.calendar_today, 'Plan'),
-                const SizedBox(width: 80),
-                _buildNavItem(3, Icons.analytics_outlined, Icons.analytics, 'Analytics'),
-                _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData icon, IconData activeIcon, String label) {
-    final isSelected = _currentIndex == index;
-
-    return InkWell(
-      onTap: () => setState(() => _currentIndex = index),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: isSelected ? AppColors.cardHoverBackground : Colors.transparent,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            Icon(
-              isSelected ? activeIcon : icon,
-              color: isSelected ? Colors.white : AppColors.textSecondary,
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.white : AppColors.textSecondary,
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-              ),
-            ),
+            _buildNavItem(0, Icons.home_outlined, Icons.home, 'Home'),
+            _buildNavItem(
+                1, Icons.calendar_today_outlined, Icons.calendar_today, 'Plan'),
+            _buildRunButton(),
+            _buildNavItem(
+                3, Icons.analytics_outlined, Icons.analytics, 'Analytics'),
+            _buildNavItem(4, Icons.person_outline, Icons.person, 'Profile'),
           ],
         ),
       ),

@@ -19,6 +19,10 @@ class TrackingRepository {
     int? duration,
     String? avgPace,
   }) async {
+    print("=== Repository Saving Data ===");
+    print("Total Distance received: $totalDistance");
+    print("Route points: ${route.length}");
+
     if (route.isEmpty) {
       throw ArgumentError('Route cannot be empty');
     }
@@ -27,7 +31,7 @@ class TrackingRepository {
       userId: userId,
       timestamp: timestamp,
       route: route,
-      totalDistance: totalDistance,
+      totalDistance: totalDistance,  // Passing through as is
       duration: duration,
       avgPace: avgPace,
     );

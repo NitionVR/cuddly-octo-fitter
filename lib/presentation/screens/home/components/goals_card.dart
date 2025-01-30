@@ -10,7 +10,9 @@ import '../../../widgets/custom_progress_bar.dart';
 import '../../../widgets/dashboard_card.dart';
 
 class GoalsCard extends StatelessWidget {
-  const GoalsCard({super.key});
+  final VoidCallback? onTap;
+
+  const GoalsCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -19,6 +21,7 @@ class GoalsCard extends StatelessWidget {
     return DashboardCard(
       icon: const Icon(Icons.track_changes, color: Colors.white, size: 24),
       title: 'Goals',
+      onTap: onTap,
       content: goals.isLoading
           ? const _LoadingState()
           : goals.activeGoals.isEmpty

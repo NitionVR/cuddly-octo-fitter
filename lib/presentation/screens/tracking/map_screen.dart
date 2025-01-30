@@ -1,8 +1,14 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
-import 'package:latlong2/latlong.dart';
+import '../../../theme/app_colors.dart';
+import '../../../theme/app_theme.dart';
 import '../../viewmodels/tracking/map_view_model.dart';
+import '../../widgets/map/map_container.dart';
+import '../../widgets/map/pause_summary_dialog.dart';
+import '../../widgets/map/stats_dashboard.dart';
+import '../../widgets/map/tracking_controls.dart';
+
 
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -25,166 +31,147 @@ class _MapScreenState extends State<MapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MapViewModel>(
-      builder: (context, viewModel, _) {
-        if (!viewModel.isInitialized) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        return Scaffold(
-          appBar: AppBar(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                _buildStat("Pace", viewModel.pace),
-                _buildStat(
-                    "Distance", "${(viewModel.totalDistance / 1000).toStringAsFixed(2)} km"),
-                _buildStat("Time", viewModel.getElapsedTime()),
-              ],
-            ),
-            backgroundColor: Colors.teal,
-            elevation: 0,
-          ),
-          body: Stack(
-            children: [
-              FlutterMap(
-                mapController: viewModel.mapController,
-                options: MapOptions(
-                  center: viewModel.route.isNotEmpty
-                      ? viewModel.route.last
-                      : const LatLng(0, 0),
-                  zoom: 16.0,
-                  maxZoom: 18.0,
-                  minZoom: 3.0,
-                  interactiveFlags: InteractiveFlag.pinchZoom | InteractiveFlag.drag,
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.backgroundStart,
+            AppColors.backgroundEnd,
+          ],
+        ),
+      ),
+      child: Consumer<MapViewModel>(
+        builder: (context, viewModel, _) {
+          if (!viewModel.isInitialized) {
+            return const Scaffold(
+              backgroundColor: Colors.transparent,
+              body: Center(
+                child: CircularProgressIndicator(
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
+              ),
+            );
+          }
+
+          return Scaffold(
+            backgroundColor: Colors.transparent,
+            body: SafeArea(
+              child: Column(
                 children: [
-                  TileLayer(
-                    urlTemplate: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-                    subdomains: const ['a', 'b', 'c'],
+                  // App Bar
+                  _buildAppBar(),
+
+                  // Stats Dashboard
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                    child: StatsDashboard(viewModel: viewModel),
                   ),
-                  PolylineLayer(
-                    polylines: viewModel.route.isEmpty ? [] : viewModel.polylines,
-                  ),
-                  MarkerLayer(
-                    markers: viewModel.markers,
+
+                  // Map and Controls
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        // Map Container
+                        MapContainer(viewModel: viewModel),
+
+                        // GPS Signal
+                        if (viewModel.showGpsSignal)
+                          Positioned(
+                            top: 16,
+                            left: 32,
+                            child: _buildGpsSignalIndicator(viewModel),
+                          ),
+
+                        // Center Button (moved inside map area)
+                        Positioned(
+                          bottom: 100,
+                          right: 32,
+                          child: _buildCenterButton(viewModel),
+                        ),
+
+                        // Tracking Controls
+                        Positioned(
+                          left: 16,
+                          right: 16,
+                          bottom: 16,
+                          child: TrackingControls(
+                            viewModel: viewModel,
+                            onPauseTap: () =>
+                                _showPauseSummaryDialog(context, viewModel),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-
-              // GPS Signal Indicator
-              Positioned(
-                top: 16,
-                left: 16,
-                child: _buildGpsSignalBars(viewModel),
-              ),
-
-              // Control Buttons
-              Positioned(
-                bottom: 100,
-                right: 16,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    FloatingActionButton(
-                      heroTag: 'centerLocation',
-                      mini: true,
-                      onPressed: viewModel.centerOnCurrentLocation,
-                      child: const Icon(Icons.my_location),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Tracking Button
-              Positioned(
-                bottom: 20,
-                left: 20,
-                right: 20,
-                child: _buildTrackingButton(viewModel),
-              ),
-            ],
-          ),
-        );
-      },
+            ),
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildTrackingButton(MapViewModel viewModel) {
-    return ElevatedButton(
-      onPressed: () {
-        if (viewModel.isTracking && !viewModel.isPaused) {
-          _showPauseDialog(context, viewModel);
-        } else {
-          viewModel.toggleTracking();
-        }
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _getTrackingButtonColor(viewModel),
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
+  Widget _buildAppBar() {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          const Text(
+            'Run Tracking',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            icon: const Icon(Icons.history, color: Colors.white),
+            onPressed: () {
+              // Navigate to history
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCenterButton(MapViewModel viewModel) {
+    return GlassmorphicContainer(
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: viewModel.centerOnCurrentLocation,
+          borderRadius: BorderRadius.circular(16),
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            child: const Icon(
+              Icons.my_location,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
         ),
       ),
-      child: Text(
-        _getTrackingButtonText(viewModel),
-        style: const TextStyle(fontSize: 16),
-      ),
     );
   }
 
-  Widget _buildStat(String label, String value) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(label, style: const TextStyle(fontSize: 14, color: Colors.white70)),
-        const SizedBox(height: 2),
-        Text(value, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
-
-  Widget _buildGpsSignalBars(MapViewModel viewModel) {
-    if (!viewModel.showGpsSignal) return const SizedBox.shrink();
-
-    final int signalStrength = _getSignalBars(viewModel.gpsAccuracy);
-    final color = _getGpsColor(viewModel.gpsAccuracy);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
+  Widget _buildGpsSignalIndicator(MapViewModel viewModel) {
+    return GlassmorphicContainer(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            SizedBox(
-              height: 20,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: List.generate(4, (index) {
-                  final bool isActive = index < signalStrength;
-                  return Container(
-                    width: 4,
-                    height: 5 + (index * 4),
-                    margin: const EdgeInsets.symmetric(horizontal: 1),
-                    decoration: BoxDecoration(
-                      color: isActive ? color : Colors.grey[300],
-                      borderRadius: const BorderRadius.vertical(
-                        top: Radius.circular(1),
-                      ),
-                    ),
-                  );
-                }),
-              ),
-            ),
-            const SizedBox(width: 6),
+            _buildSignalBars(viewModel.gpsAccuracy),
+            const SizedBox(width: 8),
             Text(
-              'GPS',
-              style: TextStyle(
-                fontSize: 12,
-                color: color,
+              _getGpsQualityText(viewModel.gpsAccuracy),
+              style: AppTheme.darkTheme.textTheme.bodySmall?.copyWith(
+                color: _getGpsColor(viewModel.gpsAccuracy),
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -192,6 +179,37 @@ class _MapScreenState extends State<MapScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildSignalBars(int accuracy) {
+    final int signalStrength = _getSignalBars(accuracy);
+    final color = _getGpsColor(accuracy);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: List.generate(4, (index) {
+        final bool isActive = index < signalStrength;
+        return Container(
+          width: 4,
+          height: 6 + (index * 3),
+          margin: const EdgeInsets.symmetric(horizontal: 1),
+          decoration: BoxDecoration(
+            color: isActive ? color : color.withOpacity(0.2),
+            borderRadius: const BorderRadius.vertical(
+              top: Radius.circular(1),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+
+  String _getGpsQualityText(int accuracy) {
+    if (accuracy <= 5) return 'Excellent';
+    if (accuracy <= 10) return 'Good';
+    if (accuracy <= 20) return 'Fair';
+    return 'Poor';
   }
 
   int _getSignalBars(int accuracy) {
@@ -210,47 +228,67 @@ class _MapScreenState extends State<MapScreen> {
     return Colors.red;
   }
 
-  void _showPauseDialog(BuildContext context, MapViewModel viewModel) {
+  void _showPauseSummaryDialog(BuildContext context, MapViewModel viewModel) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Run Paused'),
-          content: const Text('What would you like to do?'),
-          actions: [
-            TextButton(
-              child: const Text('Continue Run'),
-              onPressed: () {
-                viewModel.resumeTracking();
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-              child: const Text('End Run'),
-              onPressed: () {
-                viewModel.endTracking();
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+      builder: (context) =>
+          PauseSummaryDialog(
+            viewModel: viewModel,
+            onResume: () {
+              viewModel.resumeTracking();
+              Navigator.pop(context);
+            },
+            onEnd: () {
+              viewModel.endTracking();
+              Navigator.pop(context);
+              // Navigate to summary screen or perform end action
+              Navigator.pushNamed(context, '/summary', arguments: {
+                'distance': viewModel.totalDistance,
+                'duration': viewModel.getElapsedTime(),
+                'pace': viewModel.pace,
+                'route': viewModel.route,
+              });
+            },
+          ),
     );
   }
+}
 
-  String _getTrackingButtonText(MapViewModel viewModel) {
-    if (!viewModel.isTracking) return 'Start Tracking';
-    if (viewModel.isPaused) return 'Resume Tracking';
-    return 'Pause Tracking';
-  }
+// GlassmorphicContainer widget (if not already in a separate file)
+class GlassmorphicContainer extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets? padding;
+  final double borderRadius;
+  final Color? backgroundColor;
 
-  Color _getTrackingButtonColor(MapViewModel viewModel) {
-    if (!viewModel.isTracking) return Colors.green;
-    if (viewModel.isPaused) return Colors.orange;
-    return Colors.red;
+  const GlassmorphicContainer({
+    Key? key,
+    required this.child,
+    this.padding,
+    this.borderRadius = 16,
+    this.backgroundColor,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(borderRadius),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+        child: Container(
+          padding: padding,
+          decoration: BoxDecoration(
+            color: backgroundColor ?? AppColors.cardBackground,
+            borderRadius: BorderRadius.circular(borderRadius),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.1),
+              width: 1,
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
   }
 }

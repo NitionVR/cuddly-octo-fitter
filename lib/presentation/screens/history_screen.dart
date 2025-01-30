@@ -77,7 +77,8 @@ class HistoryScreen extends StatelessWidget {
   Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item, int index) {
     final timestamp = item['timestamp'] as DateTime;
     final duration = item['duration'] as int;
-    final totalDistance = item['total_distance'] ?? 0.0;
+    final totalDistanceMeters = item['total_distance'] ?? 0.0;
+    final totalDistanceKm = totalDistanceMeters / 1000;
     final avgPace = item['avg_pace'];
     final route = item['route'] as List<LatLng>;
 
@@ -115,7 +116,7 @@ class HistoryScreen extends StatelessWidget {
                 _buildStatItem(
                   context,
                   'Distance',
-                  '${totalDistance.toStringAsFixed(2)} km',
+                  '${totalDistanceKm.toStringAsFixed(2)} km',
                   Icons.straighten,
                 ),
                 _buildStatItem(

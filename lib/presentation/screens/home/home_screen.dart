@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project_fitquest/presentation/screens/achievements_screen.dart';
+import 'package:mobile_project_fitquest/presentation/screens/analytics_screen.dart';
+import 'package:mobile_project_fitquest/presentation/screens/goals/goals_screen.dart';
 import 'package:provider/provider.dart';
 import '../../../domain/repository/achievements_repository.dart';
 import '../../../domain/repository/goals/goals_repository.dart';
@@ -81,15 +84,36 @@ class HomeScreenContent extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const GoalsCard(),
+            GoalsCard(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GoalsScreen(),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             const PersonalRecordsCard(),
             const SizedBox(height: 16),
-            const StatisticsCard(),
+            StatisticsCard(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AnalyticsScreen(),
+                ),
+              ),
+            ),
             const SizedBox(height: 16),
             const IntervalTrainingCard(),
             const SizedBox(height: 16),
-            const AchievementsCard(),
+            AchievementsCard(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AchievementsScreen(),
+                ),
+              ),
+            ),
           ],
         ),
       ),

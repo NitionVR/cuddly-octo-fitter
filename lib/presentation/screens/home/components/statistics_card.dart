@@ -7,7 +7,9 @@ import '../../../viewmodels/analytics_view_model.dart';
 import '../../../widgets/dashboard_card.dart';
 
 class StatisticsCard extends StatelessWidget {
-  const StatisticsCard({super.key});
+  final VoidCallback? onTap;
+
+  const StatisticsCard({super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -15,6 +17,7 @@ class StatisticsCard extends StatelessWidget {
 
     return DashboardCard(
       icon: const Icon(Icons.bar_chart, color: Colors.white, size: 24),
+      onTap: onTap,
       title: 'Statistics',
       content: analytics.isLoading
           ? const _LoadingState()

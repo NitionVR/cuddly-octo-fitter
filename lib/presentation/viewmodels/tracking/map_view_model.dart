@@ -16,6 +16,9 @@ class MapViewModel extends ChangeNotifier {
   final LocationService? _locationService;
   final AuthViewModel? _authViewModel;
   final MapController _mapController;
+  bool _hasStableInitialPosition = false;
+  LatLng? _initialPosition;
+
 
   List<LatLng> _route = [];
   List<Polyline> _polylines = [];
@@ -54,6 +57,7 @@ class MapViewModel extends ChangeNotifier {
   List<Polyline> get polylines => _polylines;
   List<Marker> get markers => _markers;
   List<Map<String, dynamic>> get history => _history;
+  bool get hasStableInitialPosition => _hasStableInitialPosition;
 
   bool get isInitialized =>
       _locationTrackingUseCase != null &&
@@ -125,12 +129,14 @@ class MapViewModel extends ChangeNotifier {
 
     _isTracking = true;
     _isPaused = false;
-    _startTime = DateTime.now();
+    _hasStableInitialPosition = false;
+    _initialPosition = null;
+    _startTime = null;  // We'll set this once we have a stable position
     _totalDistance = 0.0;
     _route.clear();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (_isTracking && !_isPaused) notifyListeners();
+      if (_isTracking && !_isPaused && _hasStableInitialPosition) notifyListeners();
     });
 
     _locationSubscription = _locationTrackingUseCase.startTracking().listen(
@@ -181,12 +187,38 @@ class MapViewModel extends ChangeNotifier {
     try {
       _gpsAccuracy = routePoint.accuracy.round();
 
-      if (_shouldFilterPoint(routePoint)) return;
+      // Handle initial position stabilization
+      if (!_hasStableInitialPosition) {
+        if (_initialPosition == null) {
+          _initialPosition = routePoint.position;
+          return;
+        }
+
+        // Check if we've moved significantly from initial position
+        final initialDistance = _calculateDistance(_initialPosition!, routePoint.position);
+        if (initialDistance < 5 && routePoint.accuracy < 20) {  // 5 meters threshold and good accuracy
+          _hasStableInitialPosition = true;
+          _startTime = DateTime.now();  // Start timing only after stable position
+          _route.add(routePoint.position);
+          _markers = [_createPositionMarker(routePoint.position)];
+          notifyListeners();
+          return;
+        }
+        _initialPosition = routePoint.position;
+        return;
+      }
+
+      // Normal tracking logic
+      if (_shouldFilterPoint(routePoint)) {
+        print('Point filtered out: ${routePoint.position}');
+        return;
+      }
 
       if (isActivelyTracking) {
+        print('Before update - Distance: $_totalDistance, Pace: $_pace');
         _updateRouteData(routePoint);
         _updateMapDisplay(routePoint);
-        _updatePaceCalculation();
+        print('After update - Distance: $_totalDistance, Pace: $_pace');
         notifyListeners();
       }
     } catch (e) {
@@ -195,18 +227,46 @@ class MapViewModel extends ChangeNotifier {
   }
 
   bool _shouldFilterPoint(RoutePoint point) {
-    if (point.accuracy > 1300) return true;
+    if (point.accuracy > 30) {  // More strict accuracy threshold
+      print('Point filtered due to poor accuracy: ${point.accuracy}m');
+      return true;
+    }
+
     if (_route.isEmpty) return false;
 
     final distance = _calculateDistance(_route.last, point.position);
-    return distance > 100;
+    if (distance < 0.5) {  // Filter out points that are too close (less than 0.5 meters)
+      print('Point filtered due to minimal movement: ${distance}m');
+      return true;
+    }
+
+    if (distance > 50) {  // Filter out sudden large jumps
+      print('Point filtered due to large jump: ${distance}m');
+      return true;
+    }
+
+    return false;
   }
 
   void _updateRouteData(RoutePoint point) {
-    _route.add(point.position);
-    _totalDistance += _calculateDistance(_route.last, point.position);
-    _polylines = [_createSmoothedPolyline()];
-    _markers = [_createPositionMarker(point.position)];
+    if (_route.isNotEmpty) {
+      final lastPoint = _route.last;
+      final newDistance = _calculateDistance(lastPoint, point.position);
+
+      // Only add distance if we've moved more than 0.5 meters
+      if (newDistance > 0.5) {
+        print("New distance segment: $newDistance meters");
+        _totalDistance += newDistance;
+        print("Updated total distance: $_totalDistance meters");
+        _route.add(point.position);
+        _polylines = [_createSmoothedPolyline()];
+        _markers = [_createPositionMarker(point.position)];
+        _updatePaceCalculation();
+      }
+    } else {
+      _route.add(point.position);
+      _markers = [_createPositionMarker(point.position)];
+    }
   }
 
   void _updateMapDisplay(RoutePoint point) {
@@ -234,23 +294,54 @@ class MapViewModel extends ChangeNotifier {
 
   // Pace calculation
   void _updatePaceCalculation() {
-    if (_startTime == null || _totalDistance == 0) return;
+    if (_startTime == null || _totalDistance <= 0) {
+      _pace = "0:00 min/km";
+      return;
+    }
 
     final elapsedSeconds = DateTime.now().difference(_startTime!).inSeconds;
-    final paceSeconds = (elapsedSeconds / (_totalDistance / 1000)).round();
-    _pace = '${(paceSeconds ~/ 60)}:${(paceSeconds % 60).toString().padLeft(2, '0')} min/km';
+    if (elapsedSeconds <= 0) {
+      _pace = "0:00 min/km";
+      return;
+    }
+
+    // Convert distance to kilometers
+    final distanceInKm = _totalDistance / 1000;
+    if (distanceInKm <= 0) {
+      _pace = "0:00 min/km";
+      return;
+    }
+
+    // Calculate pace in seconds per kilometer
+    final paceSeconds = (elapsedSeconds / distanceInKm).round();
+    final minutes = paceSeconds ~/ 60;
+    final seconds = paceSeconds % 60;
+    _pace = '$minutes:${seconds.toString().padLeft(2, '0')} min/km';
   }
+
 
   // Data persistence
   Future<void> saveTrackingData() async {
     final user = _authViewModel?.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
+    // Ensure final calculations are done
+    _updatePaceCalculation();
+
+    print("=== Saving Tracking Data ===");
+    print("Total Distance (meters): $_totalDistance");
+    print("Total Distance (km): ${_totalDistance / 1000}");
+    print("Route points count: ${_route.length}");
+    print("First point: ${_route.first}");
+    print("Last point: ${_route.last}");
+    print("Duration: ${getElapsedTime()}");
+    print("Pace: $_pace");
+
     await _trackingRepository?.saveTrackingData(
       userId: user.id,
       timestamp: DateTime.now(),
       route: _route,
-      totalDistance: _totalDistance,
+      totalDistance: _totalDistance,  // This is in meters
       duration: DateTime.now().difference(_startTime!).inSeconds,
       avgPace: _pace,
     );

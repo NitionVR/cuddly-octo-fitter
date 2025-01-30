@@ -347,6 +347,14 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  flutter_compass:
+    dependency: "direct dev"
+    description:
+      name: flutter_compass
+      sha256: "1b4d7e6c95a675ec8482b5c9c9ccf1ebf0ced3dbec59dce28ad609da953de850"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.8.1"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -429,6 +437,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.5.2"
+  image_gradient:
+    dependency: "direct main"
+    description:
+      name: image_gradient
+      sha256: "7c32f5a890c1d6ee631bdaaa8cdfb71166d4d4a57f11492e8953775b0ffbcce2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   internet_connection_checker_plus:
     dependency: "direct main"
     description:
