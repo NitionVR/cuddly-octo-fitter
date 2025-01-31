@@ -63,7 +63,7 @@ class AnalyticsScreen extends StatelessWidget {
                 ),
                 _buildStatItem(
                   'Total Distance',
-                  '${stats.totalDistance.toStringAsFixed(1)} km',
+                  '${stats.totalDistance.toStringAsFixed(2)} km',
                   Icons.route,
                 ),
                 _buildStatItem(
@@ -73,7 +73,7 @@ class AnalyticsScreen extends StatelessWidget {
                 ),
                 _buildStatItem(
                   'Longest Run',
-                  '${stats.longestRun.toStringAsFixed(1)} km',
+                  '${stats.longestRun.toStringAsFixed(2)} km',
                   Icons.flag,
                 ),
                 _buildStatItem(

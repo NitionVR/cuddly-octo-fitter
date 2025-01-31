@@ -44,8 +44,14 @@ class _StatisticsGrid extends StatelessWidget {
 
   const _StatisticsGrid({required this.analytics});
 
+
   @override
   Widget build(BuildContext context) {
+
+
+    final totalDistanceMeters = analytics.totalDistance as double? ?? 0.0;
+    final totalDistanceKm = totalDistanceMeters / 1000;
+
     return GridView.count(
       shrinkWrap: true,
       crossAxisCount: 2,
@@ -56,7 +62,7 @@ class _StatisticsGrid extends StatelessWidget {
       children: [
         _StatItem(
           label: 'Total Distance',
-          value: '${analytics.totalDistance.toStringAsFixed(1)}km',
+          value: '${totalDistanceKm.toStringAsFixed(2)}km',
           icon: Icons.straighten,
         ),
         _StatItem(

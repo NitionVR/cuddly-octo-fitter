@@ -30,7 +30,7 @@ class AnalyticsViewModel extends ChangeNotifier {
     try {
       // Load all analytics data
       final history = await _trackingRepository.fetchTrackingHistory(userId: userId);
-
+      print(history);
       // Calculate running stats
       _stats = _calculateRunningStats(history);
 
@@ -62,7 +62,7 @@ class AnalyticsViewModel extends ChangeNotifier {
     Duration longestDuration = Duration.zero;
 
     for (var run in history) {
-      final distance = run['total_distance'] as double;
+      final distance = (run['total_distance'] as double)/1000;
       final duration = Duration(seconds: run['duration'] as int);
 
       totalDistance += distance;
@@ -113,7 +113,7 @@ class AnalyticsViewModel extends ChangeNotifier {
       Duration totalDuration = Duration.zero;
 
       for (var run in runs) {
-        totalDistance += run['total_distance'] as double;
+        totalDistance += (run['total_distance'] as double)/1000;
         totalDuration += Duration(seconds: run['duration'] as int);
       }
 
@@ -136,18 +136,21 @@ class AnalyticsViewModel extends ChangeNotifier {
     // Find records
     try {
       // Longest run
+
+
+
       var longestRun = history.reduce((a, b) =>
-      (a['total_distance'] as double) > (b['total_distance'] as double) ? a : b);
+      ((a['total_distance'] as double)/1000) > ((b['total_distance'] as double))/1000 ? a : b);
 
       records.add(PersonalRecord(
         category: 'Longest Run',
         value: longestRun['total_distance'] as double,
         achievedDate: longestRun['timestamp'] as DateTime,
-        displayValue: '${(longestRun['total_distance'] as double).toStringAsFixed(2)} km',
+        displayValue: '${((longestRun['total_distance'] as double)/1000).toStringAsFixed(2)} km',
       ));
 
       // Fastest 5K
-      var fiveKRuns = history.where((run) => (run['total_distance'] as double) >= 5.0).toList();
+      var fiveKRuns = history.where((run) => (run['total_distance'] as double)/1000 >= 5.0).toList();
       if (fiveKRuns.isNotEmpty) {
         var fastest5K = fiveKRuns.reduce((a, b) {
           final paceA = a['avg_pace'] as String? ?? '0:00 min/km';

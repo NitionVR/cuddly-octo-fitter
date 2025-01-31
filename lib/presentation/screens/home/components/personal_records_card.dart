@@ -161,15 +161,15 @@ class _RecordItem extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          if (record.value > 0) ...[
-            const SizedBox(height: 4),
-            Text(
-              _formatDate(record.achievedDate),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
+          // if (record.value > 0) ...[
+          //   const SizedBox(height: 4),
+          //   Text(
+          //     _formatDate(record.achievedDate),
+          //     style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          //       color: AppColors.textSecondary,
+          //     ),
+          //   ),
+          // ],
         ],
       ),
     );
