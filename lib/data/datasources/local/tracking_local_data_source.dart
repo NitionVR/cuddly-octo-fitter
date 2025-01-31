@@ -5,6 +5,20 @@ import 'database_helper.dart';
 
 class TrackingLocalDataSource {
   final DatabaseHelper _databaseHelper = DatabaseHelper();
+  bool _isInitialized = false;
+
+  Future<void> initialize() async {
+    if (_isInitialized) return;
+
+    try {
+      await _databaseHelper.database;
+      _isInitialized = true;
+    } catch (e) {
+      print('Database initialization failed, attempting reset: $e');
+      await _databaseHelper.forceReset();
+      _isInitialized = true;
+    }
+  }
 
   Future<void> saveTrackingHistory({
     required String userId,

@@ -23,148 +23,172 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     try {
       final path = join(await getDatabasesPath(), _databaseName);
-      return openDatabase(
-        path,
-        version: _currentVersion,
-        onCreate: onCreate,
-        onUpgrade: onUpgrade,
-      );
-    } catch (e) {
-      if (kDebugMode) {
-        print('Database initialization error: $e');
+
+      try {
+        return await openDatabase(
+          path,
+          version: _currentVersion,
+          onCreate: onCreate,
+          onUpgrade: onUpgrade,
+          onOpen: (db) async {
+            // Verify database integrity
+            try {
+              await db.query('sqlite_master');
+            } catch (e) {
+              print('Database corruption detected: $e');
+              await db.close();
+              await deleteDatabase(path);
+              throw Exception('Database corruption detected');
+            }
+          },
+        );
+      } catch (e) {
+        print('Database open failed, attempting recovery: $e');
+        await deleteDatabase(path);
+        return await openDatabase(
+          path,
+          version: _currentVersion,
+          onCreate: onCreate,
+          onUpgrade: onUpgrade,
+        );
       }
+    } catch (e) {
+      print('Database initialization error: $e');
       rethrow;
     }
   }
 
+
+  Future<bool> _tableExists(Database db, String tableName) async {
+    final result = await db.query(
+      'sqlite_master',
+      where: 'type = ? AND name = ?',
+      whereArgs: ['table', tableName],
+    );
+    return result.isNotEmpty;
+  }
+
+
   Future<void> onCreate(Database db, int version) async {
     try {
-      await db.execute('''
-      CREATE TABLE tracking_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        last_sync TEXT,
-        user_id TEXT NOT NULL,
-        timestamp TEXT NOT NULL,
-        route TEXT NOT NULL,
-        total_distance REAL,
-        duration INTEGER,
-        avg_pace TEXT
-      )
-    ''');
 
-      await db.execute('''
-      CREATE TABLE training_plans (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        durationWeeks INTEGER NOT NULL,
-        difficulty TEXT NOT NULL,
-        type TEXT NOT NULL,
-        weeks TEXT NOT NULL,
-        imageUrl TEXT,
-        metadata TEXT,
-        isCustom INTEGER DEFAULT 0,
-        createdBy TEXT,
-        isActive INTEGER DEFAULT 1
-      )
-    ''');
-
-      await db.execute('''
-      CREATE TABLE completed_workouts (
-        userId TEXT NOT NULL,
-        weekId TEXT NOT NULL,
-        workoutId TEXT NOT NULL,
-        completed INTEGER NOT NULL,
-        PRIMARY KEY (userId, weekId, workoutId)
-      )
-    ''');
-
-      await db.execute('''
-      CREATE TABLE fitness_goals (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        type TEXT NOT NULL,
-        period TEXT NOT NULL,
-        target REAL NOT NULL,
-        currentProgress REAL DEFAULT 0.0,
-        startDate TEXT NOT NULL,
-        endDate TEXT NOT NULL,
-        isCompleted INTEGER DEFAULT 0,
-        lastUpdated TEXT NOT NULL,
-        isActive INTEGER DEFAULT 1,
-        FOREIGN KEY (userId) REFERENCES users(id)
-      )
-    ''');
-
-      await db.execute('''
-      CREATE TABLE achievements (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        type TEXT NOT NULL,
-        unlockedAt TEXT,
-        criteria TEXT,
-        icon TEXT,
-        isHidden INTEGER DEFAULT 0,
-        createdAt TEXT NOT NULL,
-        lastUpdated TEXT NOT NULL
-      )
-    ''');
-
-      await db.execute('''
-        CREATE INDEX idx_achievements_userId ON achievements(userId)
+      if (!await _tableExists(db, 'tracking_history')) {
+          await db.execute('''
+            CREATE TABLE tracking_history (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              last_sync TEXT,
+              user_id TEXT NOT NULL,
+              timestamp TEXT NOT NULL,
+              route TEXT NOT NULL,
+              total_distance REAL,
+              duration INTEGER,
+              avg_pace TEXT
+            )
       ''');
+      }
 
-      await db.execute('''
-        CREATE INDEX idx_achievements_unlocked ON achievements(userId, unlockedAt)
+      if (!await _tableExists(db, 'fitness_goals')) {
+          await db.execute('''
+        CREATE TABLE fitness_goals (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          type TEXT NOT NULL,
+          period TEXT NOT NULL,
+          target REAL NOT NULL,
+          currentProgress REAL DEFAULT 0.0,
+          startDate TEXT NOT NULL,
+          endDate TEXT NOT NULL,
+          isCompleted INTEGER DEFAULT 0,
+          lastUpdated TEXT NOT NULL,
+          isActive INTEGER DEFAULT 1,
+          FOREIGN KEY (userId) REFERENCES users(id)
+        )
       ''');
+      }
 
-      await db.execute('''
-      CREATE TABLE training_plans (
-        id TEXT PRIMARY KEY,
-        userId TEXT NOT NULL,
-        title TEXT NOT NULL,
-        description TEXT NOT NULL,
-        durationWeeks INTEGER NOT NULL,
-        difficulty TEXT NOT NULL,
-        type TEXT NOT NULL,
-        weeks TEXT NOT NULL,
-        imageUrl TEXT,
-        metadata TEXT,
-        isCustom INTEGER DEFAULT 0,
-        isTemplate INTEGER DEFAULT 0,
-        isActive INTEGER DEFAULT 1,
-        startDate TEXT,
-        completedDate TEXT,
-        createdBy TEXT,
-        lastUpdated TEXT
-      )
-    ''');
+      if (!await _tableExists(db, 'achievements')) {
+          await db.execute('''
+        CREATE TABLE achievements (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          type TEXT NOT NULL,
+          unlockedAt TEXT,
+          criteria TEXT,
+          icon TEXT,
+          isHidden INTEGER DEFAULT 0,
+          createdAt TEXT NOT NULL,
+          lastUpdated TEXT NOT NULL
+        )
+      ''');
+      }
+
+      if (!await _tableExists(db, 'training_plans')) {
+          await db.execute('''
+        CREATE TABLE training_plans (
+          id TEXT PRIMARY KEY,
+          userId TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL,
+          durationWeeks INTEGER NOT NULL,
+          difficulty TEXT NOT NULL,
+          type TEXT NOT NULL,
+          weeks TEXT NOT NULL,
+          imageUrl TEXT,
+          metadata TEXT,
+          isCustom INTEGER DEFAULT 0,
+          isTemplate INTEGER DEFAULT 0,
+          isActive INTEGER DEFAULT 1,
+          startDate TEXT,
+          completedDate TEXT,
+          createdBy TEXT,
+          lastUpdated TEXT
+        )
+      ''');
+      }
 
       // Update completed_workouts table creation
-      await db.execute('''
-      CREATE TABLE completed_workouts (
-        userId TEXT NOT NULL,
-        weekId TEXT NOT NULL,
-        workoutId TEXT NOT NULL,
-        completed INTEGER NOT NULL,
-        completedAt TEXT,
-        PRIMARY KEY (userId, workoutId)
-      )
-    ''');
+      if (!await _tableExists(db, 'completed_workouts')) {
+          await db.execute('''
+        CREATE TABLE completed_workouts (
+          userId TEXT NOT NULL,
+          weekId TEXT NOT NULL,
+          workoutId TEXT NOT NULL,
+          completed INTEGER NOT NULL,
+          completedAt TEXT,
+          PRIMARY KEY (userId, workoutId)
+        )
+      ''');
+      }
 
-      // Add indexes for training plans
-      await db.execute('''
-      CREATE INDEX idx_training_plans_user 
-      ON training_plans(userId, isActive)
-    ''');
+      try {
+          await db.execute('''
+          CREATE INDEX IF NOT EXISTS idx_achievements_userId 
+          ON achievements(userId)
+        ''');
 
-      await db.execute('''
-      CREATE INDEX idx_completed_workouts_user 
-      ON completed_workouts(userId, completed)
-    ''');
+          await db.execute('''
+          CREATE INDEX IF NOT EXISTS idx_achievements_unlocked 
+          ON achievements(userId, unlockedAt)
+        ''');
+
+
+          // Add indexes for training plans
+          await db.execute('''
+        CREATE INDEX IF NOT idx_training_plans_user 
+        ON training_plans(userId, isActive)
+      ''');
+
+          await db.execute('''
+        CREATE INDEX IF NOT idx_completed_workouts_user 
+        ON completed_workouts(userId, completed)
+      ''');
+      } catch(e){
+        if (kDebugMode) {
+          print('Index creation error (non-fatal): $e');
+        }
+      }
 
     } catch (e) {
       if (kDebugMode) {
@@ -327,6 +351,20 @@ class DatabaseHelper {
       if (kDebugMode) {
         print('Database reset error: $e');
       }
+      rethrow;
+    }
+  }
+
+  Future<void> forceReset() async {
+    try {
+      final path = join(await getDatabasesPath(), _databaseName);
+      await deleteDatabase(path);
+      _database = null;
+      // This will trigger database recreation
+      await database;
+      print('Database reset successful');
+    } catch (e) {
+      print('Force reset error: $e');
       rethrow;
     }
   }
