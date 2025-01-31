@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -43,6 +44,14 @@ void main() async {
     // Consider showing an error screen or terminating the app
   }
 
+  if (kDebugMode) {
+    debugPrint = (String? message, {int? wrapWidth}) {
+      if (message != null && !message.contains('gralloc4')) {
+        print(message+"lol");
+      }
+    };
+  }
+
   runApp(const MyApp());
 }
 
@@ -60,10 +69,17 @@ class MyApp extends StatelessWidget {
         Provider<LocationService>(
           create: (context) => LocationService(context.read<Location>()),
         ),
-        Provider<TrackingLocalDataSource>(
-          create: (_) => TrackingLocalDataSource(),
-        ),
 
+        Provider<TrackingLocalDataSource>(
+          create: (_) {
+            final dataSource = TrackingLocalDataSource();
+            // Initialize immediately
+            dataSource.initialize().catchError((e) {
+              print('Error initializing TrackingLocalDataSource: $e');
+            });
+            return dataSource;
+          },
+        ),
         // Auth
         Provider<AuthRepository>(
           create: (_) => FirebaseAuthRepository(),
@@ -122,15 +138,17 @@ class MyApp extends StatelessWidget {
           },
         ),
 
-        ChangeNotifierProxyProvider3<AuthViewModel, TrackingRepository, LocationTrackingUseCase, MapViewModel>(
+        ChangeNotifierProxyProvider4<AuthViewModel, TrackingRepository, LocationTrackingUseCase, GoalsViewModel, MapViewModel>(
           create: (_) => MapViewModel(
             null,
             null,
             null,
             MapController(),
             null,
+            null,  // GoalsViewModel
           ),
-          update: (context, authViewModel, trackingRepository, locationTrackingUseCase, previous) {
+          update: (context, authViewModel, trackingRepository, locationTrackingUseCase, goalsViewModel, previous) {
+            // Note: goalsViewModel is now a parameter here
             return (authViewModel.isAuthenticated)
                 ? MapViewModel(
               locationTrackingUseCase,
@@ -138,6 +156,7 @@ class MyApp extends StatelessWidget {
               context.read<LocationService>(),
               previous?.mapController ?? MapController(),
               authViewModel,
+              goalsViewModel,  // Pass goalsViewModel here
             )
                 : previous!..clear();
           },
@@ -257,6 +276,11 @@ class _AuthenticationWrapperState extends State<AuthenticationWrapper> {
     _isInitializing = true;
 
     try {
+      // Initialize database first
+      final trackingDataSource = context.read<TrackingLocalDataSource>();
+      await trackingDataSource.initialize();
+      print('Database initialized');
+
       final goalsVM = context.read<GoalsViewModel>();
       final achievementsVM = context.read<AchievementsViewModel>();
       final mapVM = context.read<MapViewModel>();
