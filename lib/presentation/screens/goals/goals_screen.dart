@@ -412,7 +412,7 @@ class _GoalCard extends StatelessWidget {
   String _formatValue(double value) {
     switch (goal.type) {
       case GoalType.distance:
-        return '${value.toStringAsFixed(1)}km';
+        return '${value.toStringAsFixed(2)}km';
       case GoalType.duration:
         return '${value.toInt()}min';
       case GoalType.frequency:

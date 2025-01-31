@@ -70,51 +70,58 @@ class HomeScreenContent extends StatelessWidget {
           ],
         ),
       ),
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            RecentActivitiesCard(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const HistoryScreen(),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 24, // Extra top padding
+            bottom: 16,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              RecentActivitiesCard(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HistoryScreen(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            GoalsCard(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const GoalsScreen(),
+              const SizedBox(height: 16),
+              GoalsCard(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const GoalsScreen(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const PersonalRecordsCard(),
-            const SizedBox(height: 16),
-            StatisticsCard(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AnalyticsScreen(),
+              const SizedBox(height: 16),
+              const PersonalRecordsCard(),
+              const SizedBox(height: 16),
+              StatisticsCard(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AnalyticsScreen(),
+                  ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const IntervalTrainingCard(),
-            const SizedBox(height: 16),
-            AchievementsCard(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AchievementsScreen(),
+              const SizedBox(height: 16),
+              const IntervalTrainingCard(),
+              const SizedBox(height: 16),
+              AchievementsCard(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AchievementsScreen(),
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
