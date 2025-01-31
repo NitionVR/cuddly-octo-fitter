@@ -24,40 +24,32 @@ class AuthViewModel extends ChangeNotifier {
     if (_isInitialized) return;
 
     try {
-      // First check current user
       _currentUser = await _authRepository.getCurrentUser();
 
-      // Then set up auth state listener
       _authStateSubscription = _authRepository.authStateChanges.listen(
-            (user) {
-          if (kDebugMode) {
-            print('Auth state changed: ${user?.id}');
-          }
+            (user) async {
+          // Add delay to ensure Firestore operations complete
+          await Future.delayed(const Duration(milliseconds: 300));
           _currentUser = user;
           _isLoading = false;
           notifyListeners();
         },
         onError: (error) {
-          if (kDebugMode) {
-            print('Auth state error: $error');
-          }
-          _error = error.toString();
+          _error = _getReadableError(error.toString());
           _isLoading = false;
           notifyListeners();
         },
       );
 
     } catch (e) {
-      if (kDebugMode) {
-        print('Initialization error: $e');
-      }
-      _error = e.toString();
+      _error = _getReadableError(e.toString());
     } finally {
       _isLoading = false;
       _isInitialized = true;
       notifyListeners();
     }
   }
+
 
   Future<void> signInWithEmail(String email, String password) async {
     if (_isLoading) return;
@@ -67,27 +59,42 @@ class AuthViewModel extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      if (kDebugMode) {
-        print('Attempting sign in with email: $email');
-      }
-
       _currentUser = await _authRepository.signInWithEmail(email, password);
 
-      if (kDebugMode) {
-        print('Sign in successful. User: ${_currentUser?.id}');
+      // Verify authentication state
+      await Future.delayed(const Duration(milliseconds: 300));
+      final verifiedUser = await _authRepository.getCurrentUser();
+
+      if (verifiedUser == null) {
+        throw Exception('Authentication failed');
       }
 
+      _currentUser = verifiedUser;
+
     } catch (e) {
-      if (kDebugMode) {
-        print('Sign in error in ViewModel: $e');
-      }
-      _error = e.toString();
+      _error = _getReadableError(e.toString());
       _currentUser = null;
       rethrow;
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  String _getReadableError(String error) {
+    if (error.contains('user-not-found')) {
+      return 'No account found with this email';
+    }
+    if (error.contains('wrong-password')) {
+      return 'Incorrect password';
+    }
+    if (error.contains('invalid-email')) {
+      return 'Please enter a valid email address';
+    }
+    if (error.contains('too-many-requests')) {
+      return 'Too many attempts. Please try again later';
+    }
+    return 'Unable to sign in. Please try again';
   }
 
   Future<void> signUpWithEmail(String email, String password) async {
@@ -98,21 +105,20 @@ class AuthViewModel extends ChangeNotifier {
       _error = null;
       notifyListeners();
 
-      if (kDebugMode) {
-        print('Attempting sign up with email: $email');
-      }
-
       _currentUser = await _authRepository.signUpWithEmail(email, password);
 
-      if (kDebugMode) {
-        print('Sign up successful. User: ${_currentUser?.id}');
+      // Verify authentication state
+      await Future.delayed(const Duration(milliseconds: 300));
+      final verifiedUser = await _authRepository.getCurrentUser();
+
+      if (verifiedUser == null) {
+        throw Exception('Registration failed');
       }
 
+      _currentUser = verifiedUser;
+
     } catch (e) {
-      if (kDebugMode) {
-        print('Sign up error in ViewModel: $e');
-      }
-      _error = e.toString();
+      _error = _getSignUpError(e.toString());
       _currentUser = null;
       rethrow;
     } finally {
@@ -120,6 +126,30 @@ class AuthViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+// Add this method for signup-specific error messages
+  String _getSignUpError(String error) {
+    if (error.contains('email-already-in-use')) {
+      return 'An account already exists with this email';
+    }
+    if (error.contains('invalid-email')) {
+      return 'Please enter a valid email address';
+    }
+    if (error.contains('weak-password')) {
+      return 'Password is too weak. Please use a stronger password';
+    }
+    if (error.contains('operation-not-allowed')) {
+      return 'Unable to register at this time. Please try again later';
+    }
+    if (error.contains('too-many-requests')) {
+      return 'Too many attempts. Please try again later';
+    }
+    if (error.contains('network-request-failed')) {
+      return 'Network error. Please check your connection and try again';
+    }
+    return 'Unable to create account. Please try again';
+  }
+
 
   Future<void> signOut() async {
     if (_isLoading) return;

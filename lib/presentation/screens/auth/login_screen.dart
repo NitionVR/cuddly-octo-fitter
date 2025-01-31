@@ -3,6 +3,12 @@ import 'package:provider/provider.dart';
 import '../../viewmodels/auth/auth_viewmodel.dart';
 import '../main_screen.dart';
 import 'register_screen.dart';
+import '../../widgets/auth/auth_background.dart';
+import '../../widgets/auth/auth_button.dart';
+import '../../widgets/auth/auth_text_field.dart';
+import '../../../theme/app_colors.dart';
+
+
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -19,110 +25,165 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Welcome Back!',
-                  style: Theme.of(context).textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 32),
-                TextFormField(
-                  controller: _emailController,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
-                    }
-                    if (!value.contains('@')) {
-                      return 'Please enter a valid email';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: 'Password',
-                    prefixIcon: const Icon(Icons.lock),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _isPasswordVisible
-                            ? Icons.visibility_off
-                            : Icons.visibility,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordVisible = !_isPasswordVisible;
-                        });
-                      },
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppColors.backgroundStart,
+            AppColors.backgroundEnd,
+          ],
+        ),
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 60),
+                  Text(
+                    'Welcome Back',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.5,
                     ),
-                    border: const OutlineInputBorder(),
+                    textAlign: TextAlign.center,
                   ),
-                  obscureText: !_isPasswordVisible,
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 24),
-                Consumer<AuthViewModel>(
-                  builder: (context, authViewModel, _) {
-                    if (authViewModel.isLoading) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    return Column(
+                  const SizedBox(height: 8),
+                  Text(
+                    'Sign in to continue',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: AppColors.textSecondary,
+                      letterSpacing: 1.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 48),
+                  Form(
+                    key: _formKey,
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        ElevatedButton(
-                          onPressed: () => _handleLogin(context),
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text('Login'),
+                        AuthTextField(
+                          controller: _emailController,
+                          labelText: 'Email',
+                          prefixIcon: Icons.email_outlined,
+                          keyboardType: TextInputType.emailAddress,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your email';
+                            }
+                            if (!value.contains('@')) {
+                              return 'Please enter a valid email';
+                            }
+                            return null;
+                          },
                         ),
-                        if (authViewModel.error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8.0),
-                            child: Text(
-                              authViewModel.error!,
-                              style: const TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
+                        const SizedBox(height: 16),
+                        AuthTextField(
+                          controller: _passwordController,
+                          labelText: 'Password',
+                          prefixIcon: Icons.lock_outline,
+                          obscureText: !_isPasswordVisible,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _isPasswordVisible
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: Colors.white.withOpacity(0.7),
                             ),
+                            onPressed: () {
+                              setState(() {
+                                _isPasswordVisible = !_isPasswordVisible;
+                              });
+                            },
                           ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter your password';
+                            }
+                            return null;
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Consumer<AuthViewModel>(
+                          builder: (context, authViewModel, _) {
+                            return AuthButton(
+                              text: 'LOGIN',
+                              isLoading: authViewModel.isLoading,
+                              onPressed: () => _handleLogin(context),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Consumer<AuthViewModel>(
+                          builder: (context, authViewModel, _) {
+                            if (authViewModel.error != null) {
+                              return Container(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Colors.red.withOpacity(0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  authViewModel.error!,
+                                  style: const TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              );
+                            }
+                            return const SizedBox.shrink();
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            TextButton(
+                              onPressed: () => _showForgotPasswordDialog(context),
+                              child: Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.7),
+                                ),
+                              ),
+                            ),
+                            TextButton(
+                              onPressed: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const RegisterScreen(),
+                                ),
+                              ),
+                              child: const Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  color: AppColors.textSecondary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    );
-                  },
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  onPressed: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const RegisterScreen()),
+                    ),
                   ),
-                  child: const Text('Don\'t have an account? Register'),
-                ),
-                TextButton(
-                  onPressed: () => _showForgotPasswordDialog(context),
-                  child: const Text('Forgot Password?'),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -134,9 +195,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       try {
         final authViewModel = context.read<AuthViewModel>();
-
-        print('Attempting login with email: ${_emailController.text}');
-
         await authViewModel.signInWithEmail(
           _emailController.text,
           _passwordController.text,
@@ -144,8 +202,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!mounted) return;
 
-        // Add debug print
-        print('Login successful: ${authViewModel.isAuthenticated}');
+        // Wait for auth state to update
+        await Future.delayed(const Duration(milliseconds: 500));
 
         if (authViewModel.isAuthenticated) {
           Navigator.of(context).pushAndRemoveUntil(
@@ -155,23 +213,38 @@ class _LoginScreenState extends State<LoginScreen> {
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Authentication failed. Please try again.'),
+              content: Text('Unable to sign in. Please try again.'),
               backgroundColor: Colors.red,
             ),
           );
         }
       } catch (e) {
-        print('Login error: $e');
+        final errorMessage = _getReadableErrorMessage(e.toString());
         if (!mounted) return;
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
+            content: Text(errorMessage),
             backgroundColor: Colors.red,
           ),
         );
       }
     }
+  }
+
+  String _getReadableErrorMessage(String error) {
+    if (error.contains('user-not-found')) {
+      return 'No account found with this email';
+    }
+    if (error.contains('wrong-password')) {
+      return 'Incorrect password';
+    }
+    if (error.contains('invalid-email')) {
+      return 'Please enter a valid email address';
+    }
+    if (error.contains('too-many-requests')) {
+      return 'Too many attempts. Please try again later';
+    }
+    return 'Unable to sign in. Please try again';
   }
 
   Future<void> _showForgotPasswordDialog(BuildContext context) async {
