@@ -4,17 +4,21 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:provider/provider.dart';
 import '../../../data/datasources/local/location_service.dart';
 import '../../../domain/entities/tracking/route_point.dart';
+import '../../../domain/enums/goal_type.dart';
 import '../../../domain/repository/tracking/tracking_repository.dart';
 import '../../../domain/usecases/location_tracking_use_case.dart';
 import '../auth/auth_viewmodel.dart';
+import '../goals/goals_view_model.dart';
 
 class MapViewModel extends ChangeNotifier {
   final LocationTrackingUseCase? _locationTrackingUseCase;
   final TrackingRepository? _trackingRepository;
   final LocationService? _locationService;
   final AuthViewModel? _authViewModel;
+  final GoalsViewModel? _goalsViewModel;
   final MapController _mapController;
   bool _hasStableInitialPosition = false;
   LatLng? _initialPosition;
@@ -42,6 +46,7 @@ class MapViewModel extends ChangeNotifier {
       this._locationService,
       this._mapController,
       this._authViewModel,
+      this._goalsViewModel,
       );
 
   // Public getters
@@ -75,10 +80,43 @@ class MapViewModel extends ChangeNotifier {
       return;
     }
 
-    await _checkLocationPermissions();
-    await centerOnCurrentLocation();
-    await loadTrackingHistory();
+    try {
+      // First check permissions
+      await _checkLocationPermissions();
+
+      // Get initial location
+      final location = await _locationService?.getCurrentLocation();
+      if (location?.latitude != null && location?.longitude != null) {
+        // Create initial marker
+        _markers = [
+          Marker(
+            width: 40.0,
+            height: 40.0,
+            point: LatLng(location!.latitude!, location.longitude!),
+            builder: (ctx) => const Icon(
+              Icons.navigation,
+              color: Colors.red,
+              size: 20.0,
+            ),
+          ),
+        ];
+
+        // Move map to location
+        _mapController.move(
+          LatLng(location.latitude!, location.longitude!),
+          16.0,
+        );
+      }
+
+      // Load history after location is set
+      await loadTrackingHistory();
+
+      notifyListeners();
+    } catch (e) {
+      _handleError('Initialization failed: $e');
+    }
   }
+
 
   void clear() {
     _route.clear();
@@ -172,6 +210,12 @@ class MapViewModel extends ChangeNotifier {
 
     try {
       await saveTrackingData();
+
+      // Update goals if available
+      if (_goalsViewModel != null) {
+        await _updateGoals(_goalsViewModel!);
+      }
+
       _locationSubscription?.cancel();
       _timer?.cancel();
       _isTracking = false;
@@ -179,6 +223,29 @@ class MapViewModel extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       _handleError('Failed to end tracking: $e');
+    }
+  }
+
+  Future<void> _updateGoals(GoalsViewModel goalsViewModel) async {
+    final distance = _totalDistance / 1000; // Convert to kilometers
+    final duration = DateTime.now().difference(_startTime!).inMinutes;
+
+    // Update distance-based goals
+    final distanceGoals = goalsViewModel.getGoalsByType(GoalType.distance);
+    for (var goal in distanceGoals) {
+      if (!goal.isCompleted && !goal.isExpired) {
+        final newProgress = goal.currentProgress + distance;
+        await goalsViewModel.updateGoalProgress(goal.id, newProgress);
+      }
+    }
+
+    // Update duration-based goals
+    final durationGoals = goalsViewModel.getGoalsByType(GoalType.duration);
+    for (var goal in durationGoals) {
+      if (!goal.isCompleted && !goal.isExpired) {
+        final newProgress = goal.currentProgress + duration;
+        await goalsViewModel.updateGoalProgress(goal.id, newProgress);
+      }
     }
   }
 
@@ -390,7 +457,27 @@ class MapViewModel extends ChangeNotifier {
     try {
       final location = await _locationService?.getCurrentLocation();
       if (location?.latitude != null && location?.longitude != null) {
-        _mapController.move(LatLng(location!.latitude!, location.longitude!), 16.0);
+        // Update marker
+        _markers = [
+          Marker(
+            width: 40.0,
+            height: 40.0,
+            point: LatLng(location!.latitude!, location.longitude!),
+            builder: (ctx) => const Icon(
+              Icons.navigation,
+              color: Colors.red,
+              size: 20.0,
+            ),
+          ),
+        ];
+
+        // Move map
+        _mapController.move(
+          LatLng(location.latitude!, location.longitude!),
+          _mapController.zoom,
+        );
+
+        notifyListeners();
       }
     } catch (e) {
       _handleError('Centering failed: $e');

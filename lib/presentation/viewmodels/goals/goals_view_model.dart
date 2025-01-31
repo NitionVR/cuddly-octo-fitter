@@ -196,6 +196,55 @@ class GoalsViewModel extends ChangeNotifier {
     return completed / _activeGoals.length;
   }
 
+  Future<void> checkAndUpdateGoals() async {
+    if (_goalsRepository == null) return;
+
+    final now = DateTime.now();
+    for (var goal in _activeGoals) {
+      // Check if goal is expired
+      if (goal.endDate.isBefore(now) && !goal.isCompleted) {
+        await _goalsRepository!.updateGoal(
+          goal.copyWith(
+            isActive: false,
+            lastUpdated: now,
+          ),
+        );
+        continue;
+      }
+
+      // Check if goal is completed
+      if (goal.currentProgress >= goal.target && !goal.isCompleted) {
+        await _goalsRepository!.updateGoal(
+          goal.copyWith(
+            isCompleted: true,
+            lastUpdated: now,
+          ),
+        );
+
+        // Trigger achievement if needed
+        // You can add achievement logic here
+      }
+    }
+
+    // Reload goals after updates
+    await _loadGoals();
+  }
+
+  Map<String, double> getProgressSummary() {
+    return {
+      'distance': _getTypeProgress(GoalType.distance),
+      'duration': _getTypeProgress(GoalType.duration),
+      'frequency': _getTypeProgress(GoalType.frequency),
+    };
+  }
+
+  double _getTypeProgress(GoalType type) {
+    final goals = getGoalsByType(type);
+    if (goals.isEmpty) return 0.0;
+
+    return goals.map((g) => g.progressPercentage).reduce((a, b) => a + b) / goals.length;
+  }
+
   @override
   void dispose() {
     clear();
