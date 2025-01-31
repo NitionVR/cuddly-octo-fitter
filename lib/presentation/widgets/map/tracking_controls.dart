@@ -7,11 +7,13 @@ import '../../viewmodels/tracking/map_view_model.dart';
 class TrackingControls extends StatelessWidget {
   final MapViewModel viewModel;
   final VoidCallback onPauseTap;
+  final VoidCallback onStartTap;
 
   const TrackingControls({
     super.key,
     required this.viewModel,
     required this.onPauseTap,
+    required this.onStartTap,
   });
 
   @override
@@ -27,17 +29,24 @@ class TrackingControls extends StatelessWidget {
   }
 
   Widget _buildMainButton(BuildContext context) {
+    // Disable the button during initial GPS stabilization
+    final bool isStabilizing = viewModel.isTracking && !viewModel.hasStableInitialPosition;
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: Material(
-        color: _getButtonColor(),
+        color: isStabilizing ? Colors.grey : _getButtonColor(),
         borderRadius: BorderRadius.circular(16),
         child: InkWell(
-          onTap: () {
+          onTap: isStabilizing
+              ? null
+              : () {
             if (viewModel.isTracking && !viewModel.isPaused) {
               onPauseTap();
+            } else if (!viewModel.isTracking) {
+              onStartTap();
             } else {
-              viewModel.toggleTracking();
+              viewModel.resumeTracking();
             }
           },
           borderRadius: BorderRadius.circular(16),
@@ -46,14 +55,25 @@ class TrackingControls extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  _getButtonIcon(),
-                  color: Colors.white,
-                  size: 24,
-                ),
+                if (isStabilizing) ...[
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ] else ...[
+                  Icon(
+                    _getButtonIcon(),
+                    color: Colors.white,
+                    size: 24,
+                  ),
+                ],
                 const SizedBox(width: 12),
                 Text(
-                  _getButtonText(),
+                  _getButtonText(isStabilizing),
                   style: AppTheme.darkTheme.textTheme.titleMedium?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -69,6 +89,7 @@ class TrackingControls extends StatelessWidget {
   }
 
   Widget _buildCenterButton(MapViewModel viewModel) {
+    // No changes needed to this method
     return Align(
       alignment: Alignment.centerRight,
       child: Padding(
@@ -115,7 +136,8 @@ class TrackingControls extends StatelessWidget {
     return Icons.pause_rounded;
   }
 
-  String _getButtonText() {
+  String _getButtonText([bool isStabilizing = false]) {
+    if (isStabilizing) return 'PREPARING...';
     if (!viewModel.isTracking) return 'START RUN';
     if (viewModel.isPaused) return 'RESUME';
     return 'PAUSE';

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../theme/app_colors.dart';
 import '../../../theme/app_theme.dart';
 import '../../viewmodels/tracking/map_view_model.dart';
+import '../../widgets/map/countdown_overlay.dart';
 import '../../widgets/map/map_container.dart';
 import '../../widgets/map/pause_summary_dialog.dart';
 import '../../widgets/map/stats_dashboard.dart';
@@ -18,15 +19,25 @@ class MapScreen extends StatefulWidget {
 }
 
 class _MapScreenState extends State<MapScreen> {
+
+  bool _showingCountdown = false;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final viewModel = context.read<MapViewModel>();
-      if (!viewModel.isInitialized) {
-        viewModel.initialize();
-      }
-    });
+    _initializeAndCenter();
+  }
+
+  Future<void> _initializeAndCenter() async {
+    final viewModel = context.read<MapViewModel>();
+    if (!viewModel.isInitialized) {
+      await viewModel.initialize();
+    }
+    // Add a small delay to ensure the map is ready
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (mounted) {
+      await viewModel.centerOnCurrentLocation();
+    }
   }
 
   @override
@@ -55,64 +66,95 @@ class _MapScreenState extends State<MapScreen> {
             );
           }
 
-          return Scaffold(
-            backgroundColor: Colors.transparent,
-            body: SafeArea(
-              child: Column(
-                children: [
-                  // App Bar
-                  _buildAppBar(),
+          return Stack(  // Wrap Scaffold in Stack to overlay countdown
+            children: [
+              Scaffold(
+                backgroundColor: Colors.transparent,
+                body: SafeArea(
+                  child: Column(
+                    children: [
+                      // App Bar
+                      _buildAppBar(),
 
-                  // Stats Dashboard
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                    child: StatsDashboard(viewModel: viewModel),
-                  ),
+                      // Stats Dashboard
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
+                        child: StatsDashboard(viewModel: viewModel),
+                      ),
 
-                  // Map and Controls
-                  Expanded(
-                    child: Stack(
-                      children: [
-                        // Map Container
-                        MapContainer(viewModel: viewModel),
+                      // Map and Controls
+                      Expanded(
+                        child: Stack(
+                          children: [
+                            // Map Container
+                            MapContainer(viewModel: viewModel),
 
-                        // GPS Signal
-                        if (viewModel.showGpsSignal)
-                          Positioned(
-                            top: 16,
-                            left: 32,
-                            child: _buildGpsSignalIndicator(viewModel),
-                          ),
+                            // GPS Signal
+                            if (viewModel.showGpsSignal)
+                              Positioned(
+                                top: 16,
+                                left: 32,
+                                child: _buildGpsSignalIndicator(viewModel),
+                              ),
 
-                        // Center Button (moved inside map area)
-                        Positioned(
-                          bottom: 100,
-                          right: 32,
-                          child: _buildCenterButton(viewModel),
+
+                            // Tracking Controls
+                            Positioned(
+                              left: 16,
+                              right: 16,
+                              bottom: 16,
+                              child: TrackingControls(
+                                viewModel: viewModel,
+                                onPauseTap: () => _showPauseSummaryDialog(context, viewModel),
+                                onStartTap: () => _handleStartTracking(viewModel),  // Add this
+                              ),
+                            ),
+                          ],
                         ),
-
-                        // Tracking Controls
-                        Positioned(
-                          left: 16,
-                          right: 16,
-                          bottom: 16,
-                          child: TrackingControls(
-                            viewModel: viewModel,
-                            onPauseTap: () =>
-                                _showPauseSummaryDialog(context, viewModel),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+
+              // Countdown Overlay
+              if (_showingCountdown)
+                CountdownOverlay(
+                  onCountdownComplete: () {
+                    setState(() {
+                      _showingCountdown = false;
+                    });
+                  },
+                ),
+            ],
           );
         },
       ),
     );
   }
+
+// Add this method to your class
+  void _handleStartTracking(MapViewModel viewModel) {
+    setState(() {
+      _showingCountdown = true;
+    });
+
+    // Show the countdown overlay
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => CountdownOverlay(
+        onCountdownComplete: () {
+          Navigator.of(context).pop();
+          setState(() {
+            _showingCountdown = false;
+          });
+          viewModel.startTracking();
+        },
+      ),
+    );
+  }
+
 
   Widget _buildAppBar() {
     return Padding(
