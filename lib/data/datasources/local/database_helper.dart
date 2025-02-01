@@ -73,18 +73,18 @@ class DatabaseHelper {
     try {
 
       if (!await _tableExists(db, 'tracking_history')) {
-          await db.execute('''
-            CREATE TABLE tracking_history (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              last_sync TEXT,
-              user_id TEXT NOT NULL,
-              timestamp TEXT NOT NULL,
-              route TEXT NOT NULL,
-              total_distance REAL,
-              duration INTEGER,
-              avg_pace TEXT
-            )
-      ''');
+        await db.execute('''
+          CREATE TABLE tracking_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            last_sync TEXT,
+            user_id TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            route TEXT NOT NULL,
+            total_distance REAL,
+            duration INTEGER,
+            pace_seconds INTEGER DEFAULT 0 
+          )
+        ''');
       }
 
       if (!await _tableExists(db, 'fitness_goals')) {
@@ -297,6 +297,7 @@ class DatabaseHelper {
         )
       ''');
 
+
         // Drop and recreate completed_workouts table with new fields
         await db.execute('DROP TABLE IF EXISTS completed_workouts');
         await db.execute('''
@@ -321,7 +322,33 @@ class DatabaseHelper {
         ON completed_workouts(userId, completed)
       ''');
       }
-    } catch (e) {
+
+      if (oldVersion < 8) {
+        print('Upgrading to version 8: Adding pace_seconds column');
+
+        // First add the new column
+        await db.execute(
+            'ALTER TABLE tracking_history ADD COLUMN pace_seconds INTEGER DEFAULT 0'
+        );
+
+        // Convert existing pace strings to seconds
+        final records = await db.query('tracking_history');
+        for (var record in records) {
+          final paceStr = record['avg_pace'] as String?;
+          if (paceStr != null) {
+            final seconds = _convertPaceStringToSeconds(paceStr);
+            await db.update(
+              'tracking_history',
+              {'pace_seconds': seconds},
+              where: 'id = ?',
+              whereArgs: [record['id']],
+            );
+            print('Converted pace: $paceStr to $seconds seconds');
+          }
+        }
+      }
+
+        } catch (e) {
       if (kDebugMode) {
         print('Database upgrade error: $e');
       }
@@ -424,6 +451,16 @@ class DatabaseHelper {
         print('Error deleting user data: $e');
       }
       rethrow;
+    }
+  }
+
+  int _convertPaceStringToSeconds(String paceStr) {
+    try {
+      final timeStr = paceStr.split(' ')[0];
+      final parts = timeStr.split(':');
+      return (int.parse(parts[0]) * 60) + int.parse(parts[1]);
+    } catch (e) {
+      return 0;
     }
   }
 
