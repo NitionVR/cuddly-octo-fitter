@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project_fitquest/presentation/screens/auth/register_screen.dart';
 import 'package:provider/provider.dart';
-import '../../viewmodels/auth/auth_viewmodel.dart';
+import '../../viewmodels/auth/auth_view_model.dart';
 import '../main_screen.dart';
-import 'register_screen.dart';
-import '../../widgets/auth/auth_background.dart';
 import '../../widgets/auth/auth_button.dart';
 import '../../widgets/auth/auth_text_field.dart';
 import '../../../theme/app_colors.dart';
@@ -202,10 +201,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
         if (!mounted) return;
 
-        // Wait for auth state to update
-        await Future.delayed(const Duration(milliseconds: 500));
-
+        // Updated: Check both authentication and initialization
         if (authViewModel.isAuthenticated) {
+          // Show loading indicator while syncing
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
+
+          // Wait for initial sync to complete
+          await Future.delayed(const Duration(seconds: 1));
+
+          if (!mounted) return;
+          Navigator.pop(context); // Remove loading indicator
+
           Navigator.of(context).pushAndRemoveUntil(
             MaterialPageRoute(builder: (_) => const MainScreen()),
                 (route) => false,
@@ -244,21 +256,42 @@ class _LoginScreenState extends State<LoginScreen> {
     if (error.contains('too-many-requests')) {
       return 'Too many attempts. Please try again later';
     }
+
+    if (error.contains('network-request-failed')) {
+      return 'Network error. Please check your connection.';
+    }
+    if (error.contains('invalid-credential')) {
+      return 'Invalid email or password.';
+    }
+
     return 'Unable to sign in. Please try again';
   }
 
   Future<void> _showForgotPasswordDialog(BuildContext context) async {
     final emailController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
 
     return showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Reset Password'),
-        content: TextField(
-          controller: emailController,
-          decoration: const InputDecoration(
-            labelText: 'Email',
-            border: OutlineInputBorder(),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              border: OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your email';
+              }
+              if (!value.contains('@')) {
+                return 'Please enter a valid email';
+              }
+              return null;
+            },
           ),
         ),
         actions: [
@@ -268,23 +301,26 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
           TextButton(
             onPressed: () async {
-              try {
-                await context.read<AuthViewModel>().resetPassword(
-                  emailController.text,
-                );
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset email sent'),
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(e.toString()),
-                    backgroundColor: Colors.red,
-                  ),
-                );
+              if (formKey.currentState?.validate() ?? false) {
+                try {
+                  await context.read<AuthViewModel>().resetPassword(
+                    emailController.text,
+                  );
+                  if (!mounted) return;
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset email sent'),
+                    ),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(_getReadableErrorMessage(e.toString())),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
               }
             },
             child: const Text('Send Reset Link'),
