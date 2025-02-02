@@ -16,4 +16,16 @@ class RunningStats {
     required this.fastestPace,
     required this.longestDuration,
   });
+
+  factory RunningStats.empty() {
+    return RunningStats(
+      totalDistance: 0.0,
+      totalDuration: Duration.zero,
+      averagePace: "0:00 min/km",
+      totalRuns: 0,
+      longestRun: 0.0,
+      fastestPace: "0:00 min/km",
+      longestDuration: Duration.zero,
+    );
+  }
 }
