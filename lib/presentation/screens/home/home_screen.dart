@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_project_fitquest/presentation/screens/achievements_screen.dart';
-import 'package:mobile_project_fitquest/presentation/screens/analytics_screen.dart';
-import 'package:mobile_project_fitquest/presentation/screens/goals/goals_screen.dart';
 import 'package:provider/provider.dart';
-import '../../../domain/repository/achievements_repository.dart';
-import '../../../domain/repository/goals/goals_repository.dart';
-import '../../../domain/repository/tracking/tracking_repository.dart';
+import '../../../data/database/providers/database_provider.dart';
 import '../../../theme/app_colors.dart';
-import '../../viewmodels/achievements_viewmodel.dart';
-import '../../viewmodels/analytics_view_model.dart';
-import '../../viewmodels/auth/auth_viewmodel.dart';
+import '../../viewmodels/achievements/achievements_view_model.dart';
+import '../../viewmodels/analytics/analytics_view_model.dart';
+import '../../viewmodels/auth/auth_view_model.dart';
 import '../../viewmodels/goals/goals_view_model.dart';
+import '../achievements/achievements_screen.dart';
+import '../analytics/analytics_screen.dart';
+import '../goals/goals_screen.dart';
 import '../history_screen.dart';
 import 'components/achievements_card.dart';
 import 'components/goals_card.dart';
@@ -20,33 +18,40 @@ import 'components/recent_activities_card.dart';
 import 'components/statistics_card.dart';
 
 class HomeScreen extends StatelessWidget {
-  final TrackingRepository _trackingRepository;
-  final GoalsRepository _goalsRepository;
-  final AchievementsRepository _achievementsRepository;
+
+  final DatabaseProvider databaseProvider;
 
   const HomeScreen({
     super.key,
-    required TrackingRepository trackingRepository,
-    required GoalsRepository goalsRepository,
-    required AchievementsRepository achievementsRepository,
-  })  : _trackingRepository = trackingRepository,
-        _goalsRepository = goalsRepository,
-        _achievementsRepository = achievementsRepository;
+    required this.databaseProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
     final userId = context.read<AuthViewModel>().currentUser!.id;
+    final databaseProvider = context.read<DatabaseProvider>();
 
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => AnalyticsViewModel(_trackingRepository)..loadAnalytics(userId),
+          create: (_) => AnalyticsViewModel(
+            databaseProvider.trackingRepository, // ITrackingRepository
+            databaseProvider,
+          )..loadAnalytics(userId),
         ),
         ChangeNotifierProvider(
-          create: (_) => GoalsViewModel(_goalsRepository, userId),
+          create: (_) => GoalsViewModel(
+            databaseProvider.goalsRepository, // IGoalsRepository
+            databaseProvider,
+            userId,
+          )..initialize(),
         ),
         ChangeNotifierProvider(
-          create: (_) => AchievementsViewModel(_achievementsRepository, userId),
+          create: (_) => AchievementsViewModel(
+            databaseProvider.achievementsRepository, // IAchievementsRepository
+            databaseProvider,
+            userId,
+          )..initialize(),
         ),
       ],
       child: const HomeScreenContent(),
@@ -54,8 +59,71 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class HomeScreenContent extends StatelessWidget {
+class HomeScreenContent extends StatefulWidget {
   const HomeScreenContent({super.key});
+
+  @override
+  State<HomeScreenContent> createState() => _HomeScreenContentState();
+}
+
+class _HomeScreenContentState extends State<HomeScreenContent> {
+  late final Future<void> _initializationFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializationFuture = _initializeViewModels();
+  }
+
+  Future<void> _initializeViewModels() async {
+    final goalsVM = context.read<GoalsViewModel>();
+    final achievementsVM = context.read<AchievementsViewModel>();
+    final analyticsVM = context.read<AnalyticsViewModel>();
+    final userId = context.read<AuthViewModel>().currentUser!.id;
+
+    try {
+      await Future.wait([
+        goalsVM.initialize(),
+        achievementsVM.initialize(),
+        analyticsVM.loadAnalytics(userId),
+      ]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error initializing data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _refreshData() async {
+    final databaseProvider = context.read<DatabaseProvider>();
+    final userId = context.read<AuthViewModel>().currentUser!.id;
+
+    try {
+      // First sync all data
+      await databaseProvider.syncService.syncAll();
+
+      // Then refresh view models
+      await Future.wait([
+        context.read<AnalyticsViewModel>().loadAnalytics(userId),
+        context.read<GoalsViewModel>().refreshGoals(),
+        context.read<AchievementsViewModel>().refreshAchievements(),
+      ]);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error refreshing data: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -71,60 +139,73 @@ class HomeScreenContent extends StatelessWidget {
         ),
       ),
       child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 24, // Extra top padding
-            bottom: 16,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              RecentActivitiesCard(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const HistoryScreen(),
-                  ),
+        child: FutureBuilder(
+          future: _initializationFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(
+                child: CircularProgressIndicator(),
+              );
+            }
+
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  top: 24,
+                  bottom: 16,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    RecentActivitiesCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HistoryScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GoalsCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const GoalsScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const PersonalRecordsCard(),
+                    const SizedBox(height: 16),
+                    StatisticsCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AnalyticsScreen(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const IntervalTrainingCard(),
+                    const SizedBox(height: 16),
+                    AchievementsCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const AchievementsScreen(),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              GoalsCard(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const GoalsScreen(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const PersonalRecordsCard(),
-              const SizedBox(height: 16),
-              StatisticsCard(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AnalyticsScreen(),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const IntervalTrainingCard(),
-              const SizedBox(height: 16),
-              AchievementsCard(
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AchievementsScreen(),
-                  ),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
   }
 }
-

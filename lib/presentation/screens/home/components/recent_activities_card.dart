@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:mobile_project_fitquest/presentation/screens/history_screen.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
@@ -142,7 +141,7 @@ class _ActivityItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timestamp = activity['timestamp'] as DateTime;
+    final timestamp = DateTime.parse(activity['timestamp'] as String);
     final duration = activity['duration'] as int;
     final totalDistanceMeters = activity['total_distance'] as double? ?? 0.0;
     final totalDistanceKm = totalDistanceMeters / 1000; // Convert to kilometers

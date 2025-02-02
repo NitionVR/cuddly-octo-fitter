@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../data/models/personal_record.dart';
 import '../../../../theme/app_colors.dart';
-import '../../../viewmodels/analytics_view_model.dart';
+import '../../../viewmodels/analytics/analytics_view_model.dart';
 import '../../../widgets/dashboard_card.dart';
 
 class PersonalRecordsCard extends StatelessWidget {

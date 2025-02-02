@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/achievement.dart';
 import '../../../../theme/app_colors.dart';
+import '../../../viewmodels/achievements/achievements_view_model.dart';
 import '../../../viewmodels/achievements_viewmodel.dart';
 import '../../../widgets/dashboard_card.dart';
 import '../utils/date_formatter.dart';

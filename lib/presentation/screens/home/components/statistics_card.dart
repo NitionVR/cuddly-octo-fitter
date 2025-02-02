@@ -1,9 +1,8 @@
-// lib/presentation/screens/home/components/statistics_card.dart
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/presentation/viewmodels/analytics_view_model_extensions.dart';
 import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
-import '../../../viewmodels/analytics_view_model.dart';
+import '../../../viewmodels/analytics/analytics_view_model.dart';
 import '../../../widgets/dashboard_card.dart';
 
 class StatisticsCard extends StatelessWidget {

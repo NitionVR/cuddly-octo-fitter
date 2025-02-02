@@ -1,10 +1,8 @@
-// lib/presentation/screens/home/components/goals_card.dart
 import 'package:flutter/material.dart';
 import 'package:mobile_project_fitquest/theme/app_theme.dart';
 import 'package:provider/provider.dart';
 import '../../../../domain/entities/goals/fitness_goal.dart';
 import '../../../../domain/enums/goal_type.dart';
-import '../../../../theme/app_colors.dart';
 import '../../../viewmodels/goals/goals_view_model.dart';
 import '../../../widgets/custom_progress_bar.dart';
 import '../../../widgets/dashboard_card.dart';
