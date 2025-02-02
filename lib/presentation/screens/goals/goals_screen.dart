@@ -3,12 +3,26 @@ import 'package:provider/provider.dart';
 import '../../../domain/enums/goal_period.dart';
 import '../../../domain/enums/goal_type.dart';
 import '../../../theme/app_colors.dart';
-import '../../viewmodels/goals/goals_view_model.dart';
 import '../../../domain/entities/goals/fitness_goal.dart';
-import 'package:mobile_project_fitquest/theme/app_theme.dart';
+import '../../viewmodels/goals/goals_view_model.dart';
 
-class GoalsScreen extends StatelessWidget {
+class GoalsScreen extends StatefulWidget {
   const GoalsScreen({super.key});
+
+  @override
+  State<GoalsScreen> createState() => _GoalsScreenState();
+}
+
+class _GoalsScreenState extends State<GoalsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize if not already initialized
+    final viewModel = context.read<GoalsViewModel>();
+    if (!viewModel.isInitialized) {
+      viewModel.initialize();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

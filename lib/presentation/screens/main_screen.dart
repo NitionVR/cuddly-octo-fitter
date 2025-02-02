@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:mobile_project_fitquest/presentation/screens/tracking/map_screen.dart';
 import 'package:provider/provider.dart';
-import '../../domain/repository/achievements_repository.dart';
-import '../../domain/repository/tracking/tracking_repository.dart';
-import '../../domain/repository/goals/goals_repository.dart';
+import '../../data/database/providers/database_provider.dart';
 import '../../theme/app_colors.dart';
+import 'analytics/analytics_screen.dart';
 import 'home/home_screen.dart';
-import 'tracking/map_screen.dart';
-import 'analytics_screen.dart';
 import 'settings_screen.dart';
 import 'training/training_plan_screens.dart';
-import 'package:mobile_project_fitquest/theme/app_theme.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -23,9 +20,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final trackingRepository = Provider.of<TrackingRepository>(context);
-    final goalsRepository = Provider.of<GoalsRepository>(context);
-    final achievementsRepository = Provider.of<AchievementsRepository>(context);
+    final databaseProvider = Provider.of<DatabaseProvider>(context);
 
     return Container(
       decoration: const BoxDecoration(
@@ -44,9 +39,7 @@ class _MainScreenState extends State<MainScreen> {
           index: _currentIndex,
           children: [
             HomeScreen(
-              trackingRepository: trackingRepository,
-              goalsRepository: goalsRepository,
-              achievementsRepository: achievementsRepository,
+              databaseProvider: databaseProvider,
             ),
             const TrainingPlansScreen(),
             const MapScreen(),

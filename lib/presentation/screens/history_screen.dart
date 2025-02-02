@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:provider/provider.dart';
 import 'package:latlong2/latlong.dart';
+import '../../domain/entities/tracking/route_point.dart';
 import '../../theme/app_colors.dart';
 import '../viewmodels/tracking/map_view_model.dart';
 import '../viewmodels/tracking/route_replay_view_model.dart';
@@ -75,12 +77,37 @@ class HistoryScreen extends StatelessWidget {
   }
 
   Widget _buildHistoryCard(BuildContext context, Map<String, dynamic> item, int index) {
-    final timestamp = item['timestamp'] as DateTime;
+    final timestamp = DateTime.parse(item['timestamp'] as String);
     final duration = item['duration'] as int;
     final totalDistanceMeters = item['total_distance'] ?? 0.0;
     final totalDistanceKm = totalDistanceMeters / 1000;
-    final avgPace = item['avg_pace'];
-    final route = item['route'] as List<LatLng>;
+    // final paceSeconds = item['paceSeconds'] ?? 0;
+
+    int paceSeconds;
+    if (totalDistanceKm > 0) {
+      paceSeconds = (duration / totalDistanceKm).round();
+    } else {
+      paceSeconds = 0;
+    }
+
+    if (kDebugMode) {
+      print(totalDistanceMeters);
+    }
+
+    List<RoutePoint> routePoints = [];
+    try {
+      final routeData = item['route'];
+      if (routeData != null) {
+        routePoints = RoutePoint.parseRoutePoints(routeData);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error parsing route data: $e');
+      }
+    }
+
+// Convert RoutePoints to LatLng for display if needed
+    final route = routePoints.map((rp) => rp.position).toList();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -128,7 +155,7 @@ class HistoryScreen extends StatelessWidget {
                 _buildStatItem(
                   context,
                   'Avg Pace',
-                  '$avgPace/km',
+                  _formatPace(paceSeconds),
                   Icons.speed,
                 ),
               ],
@@ -163,6 +190,16 @@ class HistoryScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+
+  String _formatPace(int paceSeconds) {
+    if (paceSeconds <= 0) {
+      return "-- min/km";  // or return any default value you prefer
+    }
+    final minutes = paceSeconds ~/ 60;
+    final seconds = paceSeconds % 60;
+    return "$minutes:${seconds.toString().padLeft(2, '0')} min/km";
   }
 
   Widget _buildStatItem(BuildContext context, String label, String value, IconData icon) {
