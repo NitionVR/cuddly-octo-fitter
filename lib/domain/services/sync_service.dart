@@ -2,6 +2,7 @@ abstract class SyncService {
   Future<void> syncWorkouts();
   Future<void> syncGoals();
   Future<void> syncAchievements();
+  Future<void> syncTrainingPlans();
   Future<void> syncAll();
   Future<void> resolveConflicts();
   Stream<SyncStatus> get syncStatus;

@@ -29,6 +29,30 @@ class RoutePoint {
     other._accuracy == accuracy;
   }
 
+  static List<RoutePoint> parseRoutePoints(dynamic routeData) {
+    List<RoutePoint> route = [];
+    if (routeData is List) {
+      route = routeData.map((point) {
+        if (point is Map<String, dynamic>) {
+          final lat = point['latitude'];
+          final lng = point['longitude'];
+          final accuracy = point['accuracy'];
+          final timestamp = point['timestamp'];
+
+          if (lat != null && lng != null) {
+            return RoutePoint(
+              LatLng((lat as num).toDouble(), (lng as num).toDouble()),
+              timestamp != null ? DateTime.parse(timestamp as String) : DateTime.now(),
+              accuracy: accuracy != null ? (accuracy as num).toDouble() : double.infinity,
+            );
+          }
+        }
+        return null;
+      }).whereType<RoutePoint>().toList();
+    }
+    return route;
+  }
+
   @override
   // TODO: implement hashCode
   int get hashCode =>
