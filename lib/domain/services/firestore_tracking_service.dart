@@ -1,5 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:latlong2/latlong.dart';
+import '../../data/database/models/tracking_model.dart';
 
 class FirestoreTrackingService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,10 +11,11 @@ class FirestoreTrackingService {
     required Map<String, dynamic> trackingData,
   }) async {
     try {
-      // Convert LatLng list to a format Firestore can store
-      final routeData = (trackingData['route'] as List<LatLng>).map((point) => {
-        'lat': point.latitude,
-        'lng': point.longitude,
+
+      final routeList = jsonDecode(trackingData['route'] as String);
+      final routeData = (routeList as List).map((point) => {
+        'lat': point['lat'],
+        'lng': point['lng'],
       }).toList();
 
       await _firestore
@@ -21,11 +24,11 @@ class FirestoreTrackingService {
           .collection('tracking_history')
           .doc(trackingData['id'].toString())
           .set({
-        'timestamp': trackingData['timestamp'],
+        'timestamp': DateTime.parse(trackingData['timestamp']), // Convert ISO string to DateTime
         'route': routeData,
         'total_distance': trackingData['total_distance'],
         'duration': trackingData['duration'],
-        'avg_pace': trackingData['avg_pace'],
+        'pace_seconds': trackingData['pace_seconds'],
         'synced_at': FieldValue.serverTimestamp(),
       });
     } catch (e) {
@@ -45,23 +48,43 @@ class FirestoreTrackingService {
 
       return querySnapshot.docs.map((doc) {
         final data = doc.data();
-        // Convert Firestore route data back to LatLng
-        final routeData = (data['route'] as List).map((point) =>
-            LatLng(point['lat'], point['lng'])
-        ).toList();
+        // Convert Firestore route format to match TrackingModel's expected format
+        final routeData = (data['route'] as List).map((point) => {
+          'lat': point['lat'] as double,
+          'lng': point['lng'] as double,
+        }).toList();
 
         return {
-          'id': doc.id,
-          'timestamp': (data['timestamp'] as Timestamp).toDate(),
-          'route': routeData,
-          'total_distance': data['total_distance'],
-          'duration': data['duration'],
-          'avg_pace': data['avg_pace'],
+          'id': int.tryParse(doc.id) ?? 0,
+          'user_id': userId,
+          'timestamp': (data['timestamp'] as Timestamp).toDate().toIso8601String(),
+          'route': jsonEncode(routeData), // Encode as JSON string to match TrackingModel
+          'total_distance': data['total_distance'] as double?,
+          'duration': data['duration'] as int?,
+          'pace_seconds': data['pace_seconds'] as int?,
+          'last_sync': (data['synced_at'] as Timestamp?)?.toDate().toIso8601String(),
         };
       }).toList();
     } catch (e) {
       print('Error fetching from Firestore: $e');
       rethrow;
     }
+  }
+
+  // Helper method to convert TrackingModel to Firestore data
+  Map<String, dynamic> _trackingModelToFirestore(TrackingModel model) {
+    final routeData = model.route.map((point) => {
+      'lat': point.latitude,
+      'lng': point.longitude,
+    }).toList();
+
+    return {
+      'timestamp': model.timestamp,
+      'route': routeData,
+      'total_distance': model.totalDistance,
+      'duration': model.duration,
+      'pace_seconds': model.paceSeconds,
+      'synced_at': FieldValue.serverTimestamp(),
+    };
   }
 }

@@ -1,41 +1,61 @@
+// lib/data/services/firebase_sync_service.dart
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
-import 'package:sqflite/sqflite.dart';
-import '../../data/datasources/local/database_helper.dart';
 import '../../domain/services/sync_service.dart';
-
+import 'sync/base_sync_handler.dart';
+import 'sync/goals_sync_handler.dart';
+import 'sync/achievements_sync_handler.dart';
+import 'sync/training_plans_sync_handler.dart';
+import 'sync/workouts_sync_handler.dart';
 
 class FirebaseSyncService implements SyncService {
+  static const Duration _syncInterval = Duration(minutes: 15);
+  static const Duration _retryDelay = Duration(seconds: 30);
+  static const int _maxRetries = 3;
+
   final FirebaseFirestore _firestore;
-  final DatabaseHelper _databaseHelper;
+  final GoalsSyncHandler _goalsSyncHandler;
+  final AchievementsSyncHandler _achievementsSyncHandler;
+  final TrainingPlansSyncHandler _trainingPlansSyncHandler;
+  final WorkoutsSyncHandler _workoutsSyncHandler;
   final StreamController<SyncStatus> _syncStatusController;
+
   Timer? _syncTimer;
   bool _isSyncing = false;
+  int _currentRetry = 0;
 
   FirebaseSyncService({
+    required GoalsSyncHandler goalsSyncHandler,
+    required AchievementsSyncHandler achievementsSyncHandler,
+    required TrainingPlansSyncHandler trainingPlansSyncHandler,
+    required WorkoutsSyncHandler workoutsSyncHandler,
     FirebaseFirestore? firestore,
-    DatabaseHelper? databaseHelper,
   }) : _firestore = firestore ?? FirebaseFirestore.instance,
-        _databaseHelper = databaseHelper ?? DatabaseHelper(),
+        _goalsSyncHandler = goalsSyncHandler,
+        _achievementsSyncHandler = achievementsSyncHandler,
+        _trainingPlansSyncHandler = trainingPlansSyncHandler,
+        _workoutsSyncHandler = workoutsSyncHandler,
         _syncStatusController = StreamController<SyncStatus>.broadcast() {
     _initializeSync();
   }
 
   void _initializeSync() {
-    // Set up periodic sync (every 15 minutes)
-    _syncTimer = Timer.periodic(const Duration(minutes: 15), (_) => syncAll());
+    _syncTimer = Timer.periodic(_syncInterval, (_) => syncAll());
+    _syncStatusController.add(SyncStatus.idle);
 
-    // Initialize connectivity subscription
-    final subscription = Connectivity().onConnectivityChanged;
-    subscription.listen((update) async {
-      if (update != ConnectivityResult.none) {
+    Connectivity().onConnectivityChanged.listen((update) async {
+      if (update != ConnectivityResult.none && !_isSyncing) {
         await syncAll();
       }
     });
   }
 
+  String? _getCurrentUserId() {
+    return FirebaseAuth.instance.currentUser?.uid;
+  }
 
   @override
   Stream<SyncStatus> get syncStatus => _syncStatusController.stream;
@@ -43,6 +63,13 @@ class FirebaseSyncService implements SyncService {
   @override
   Future<void> syncAll() async {
     if (_isSyncing) return;
+
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      _syncStatusController.add(SyncStatus.error);
+      return;
+    }
+
     _isSyncing = true;
     _syncStatusController.add(SyncStatus.syncing);
 
@@ -54,316 +81,144 @@ class FirebaseSyncService implements SyncService {
       }
 
       await Future.wait([
-        syncWorkouts(),
         syncGoals(),
         syncAchievements(),
+        syncWorkouts(),
+        syncTrainingPlans(), // Add this
       ]);
 
       _syncStatusController.add(SyncStatus.completed);
+      _currentRetry = 0;
     } catch (e) {
       if (kDebugMode) {
         print('Sync error: $e');
       }
-      _syncStatusController.add(SyncStatus.error);
+      if (_currentRetry < _maxRetries) {
+        _currentRetry++;
+        await Future.delayed(_retryDelay * _currentRetry);
+        await syncAll();
+      } else {
+        _syncStatusController.add(SyncStatus.error);
+      }
     } finally {
       _isSyncing = false;
     }
   }
 
   @override
-  Future<void> syncWorkouts() async {
-    final db = await _databaseHelper.database;
-
-    // Get local workouts that haven't been synced
-    final unsynced = await db.query(
-      'workouts',
-      where: 'isSynced = ?',
-      whereArgs: [0],
-    );
-
-    // Upload unsynced workouts to Firestore
-    for (final workout in unsynced) {
-      try {
-        final docRef = _firestore.collection('workouts').doc(workout['id'] as String);
-        final cloudWorkout = await docRef.get();
-
-        if (cloudWorkout.exists) {
-          // Handle conflict
-          final localLastModified = DateTime.parse(workout['lastModified'] as String);
-          final cloudLastModified = cloudWorkout.data()?['lastModified'] as Timestamp;
-
-          if (cloudLastModified.toDate().isAfter(localLastModified)) {
-            // Cloud version is newer, update local
-            await _updateLocalWorkout(workout['id'] as String, cloudWorkout.data()!);
-          } else {
-            // Local version is newer, update cloud
-            await docRef.set(workout);
-          }
-        } else {
-          // No conflict, just upload
-          await docRef.set(workout);
-        }
-
-        // Mark as synced in local DB
-        await db.update(
-          'workouts',
-          {'isSynced': 1},
-          where: 'id = ?',
-          whereArgs: [workout['id']],
-        );
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error syncing workout ${workout['id']}: $e');
-        }
-      }
-    }
-
-    // Download new workouts from Firestore
-    final lastSync = await _getLastSyncTime();
-    final newWorkouts = await _firestore
-        .collection('workouts')
-        .where('lastModified', isGreaterThan: lastSync)
-        .get();
-
-    for (final doc in newWorkouts.docs) {
-      await _updateLocalWorkout(doc.id, doc.data());
-    }
-
-    await _updateLastSyncTime();
-  }
-
-  Future<void> _updateLocalWorkout(String id, Map<String, dynamic> data) async {
-    final db = await _databaseHelper.database;
-    await db.insert(
-      'workouts',
-      {...data, 'id': id, 'isSynced': 1},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
-  @override
   Future<void> syncGoals() async {
-    final db = await _databaseHelper.database;
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
-    // Sync unsynced local goals
-    final unsynced = await db.query(
-      'goals',
-      where: 'isSynced = ?',
-      whereArgs: [0],
-    );
-
-    for (final goal in unsynced) {
-      try {
-        final docRef = _firestore.collection('goals').doc(goal['id'] as String);
-        final cloudGoal = await docRef.get();
-
-        if (cloudGoal.exists) {
-          final localLastModified = DateTime.parse(goal['lastUpdated'] as String);
-          final cloudLastModified = cloudGoal.data()?['lastUpdated'] as Timestamp;
-
-          if (cloudLastModified.toDate().isAfter(localLastModified)) {
-            await _updateLocalGoal(goal['id'] as String, cloudGoal.data()!);
-          } else {
-            await docRef.set(goal);
-          }
-        } else {
-          await docRef.set(goal);
-        }
-
-        await db.update(
-          'goals',
-          {'isSynced': 1},
-          where: 'id = ?',
-          whereArgs: [goal['id']],
-        );
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error syncing goal ${goal['id']}: $e');
-        }
+    try {
+      await _goalsSyncHandler.sync(userId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing goals: $e');
       }
-    }
-
-    // Get new goals from cloud
-    final lastSync = await _getLastSyncTime();
-    final newGoals = await _firestore
-        .collection('goals')
-        .where('lastUpdated', isGreaterThan: lastSync)
-        .get();
-
-    for (final doc in newGoals.docs) {
-      await _updateLocalGoal(doc.id, doc.data());
+      rethrow;
     }
   }
-
-  Future<void> _updateLocalGoal(String id, Map<String, dynamic> data) async {
-    final db = await _databaseHelper.database;
-    await db.insert(
-      'goals',
-      {...data, 'id': id, 'isSynced': 1},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
-
 
   @override
   Future<void> syncAchievements() async {
-    final db = await _databaseHelper.database;
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
 
-    // Sync unsynced local achievements
-    final unsynced = await db.query(
-      'achievements',
-      where: 'isSynced = ?',
-      whereArgs: [0],
-    );
-
-    for (final achievement in unsynced) {
-      try {
-        final docRef = _firestore.collection('achievements').doc(achievement['id'] as String);
-        final cloudAchievement = await docRef.get();
-
-        if (cloudAchievement.exists) {
-          final localLastModified = DateTime.parse(achievement['lastModified'] as String);
-          final cloudLastModified = cloudAchievement.data()?['lastModified'] as Timestamp;
-
-          if (cloudLastModified.toDate().isAfter(localLastModified)) {
-            await _updateLocalAchievement(achievement['id'] as String, cloudAchievement.data()!);
-          } else {
-            await docRef.set(achievement);
-          }
-        } else {
-          await docRef.set(achievement);
-        }
-
-        await db.update(
-          'achievements',
-          {'isSynced': 1},
-          where: 'id = ?',
-          whereArgs: [achievement['id']],
-        );
-      } catch (e) {
-        if (kDebugMode) {
-          print('Error syncing achievement ${achievement['id']}: $e');
-        }
+    try {
+      await _achievementsSyncHandler.sync(userId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing achievements: $e');
       }
-    }
-
-    // Get new achievements from cloud
-    final lastSync = await _getLastSyncTime();
-    final newAchievements = await _firestore
-        .collection('achievements')
-        .where('lastModified', isGreaterThan: lastSync)
-        .get();
-
-    for (final doc in newAchievements.docs) {
-      await _updateLocalAchievement(doc.id, doc.data());
+      rethrow;
     }
   }
 
-  Future<void> _updateLocalAchievement(String id, Map<String, dynamic> data) async {
-    final db = await _databaseHelper.database;
-    await db.insert(
-      'achievements',
-      {...data, 'id': id, 'isSynced': 1},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+  @override
+  Future<void> syncWorkouts() async {
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      await _workoutsSyncHandler.sync(userId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing workouts: $e');
+      }
+      rethrow;
+    }
   }
 
+  @override // Add this override
+  Future<void> syncTrainingPlans() async {
+    final userId = _getCurrentUserId();
+    if (userId == null) {
+      throw Exception('User not authenticated');
+    }
+
+    try {
+      await _trainingPlansSyncHandler.sync(userId);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error syncing training plans: $e');
+      }
+      rethrow;
+    }
+  }
 
   @override
   Future<void> resolveConflicts() async {
-    final db = await _databaseHelper.database;
+    final userId = _getCurrentUserId();
+    if (userId == null) return;
 
-    // Get all data with sync conflicts
-    final conflicts = await Future.wait([
-      _getConflicts('workouts'),
-      _getConflicts('goals'),
-      _getConflicts('achievements'),
-    ]);
+    try {
+      _syncStatusController.add(SyncStatus.syncing);
 
-    for (var conflictList in conflicts) {
-      for (var conflict in conflictList) {
-        try {
-          // Default resolution: newest version wins
-          final localData = conflict['local'];
-          final cloudData = conflict['cloud'];
+      await Future.wait([
+        _goalsSyncHandler.resolveConflicts(userId),
+        _achievementsSyncHandler.resolveConflicts(userId),
+        _workoutsSyncHandler.resolveConflicts(userId),
+        _trainingPlansSyncHandler.resolveConflicts(userId),
+      ]);
 
-          final localTime = DateTime.parse(localData['lastModified'] as String);
-          final cloudTime = (cloudData['lastModified'] as Timestamp).toDate();
-
-          if (cloudTime.isAfter(localTime)) {
-            await _updateLocalData(
-              conflict['table'] as String,
-              conflict['id'] as String,
-              cloudData,
-            );
-          } else {
-            await _updateCloudData(
-              conflict['table'] as String,
-              conflict['id'] as String,
-              localData,
-            );
-          }
-        } catch (e) {
-          if (kDebugMode) {
-            print('Error resolving conflict: $e');
-          }
-        }
+      _syncStatusController.add(SyncStatus.completed);
+    } catch (e) {
+      if (kDebugMode) {
+        print('Error resolving conflicts: $e');
       }
+      _syncStatusController.add(SyncStatus.error);
     }
   }
 
-  Future<List<Map<String, dynamic>>> _getConflicts(String table) async {
-    final db = await _databaseHelper.database;
-    final localData = await db.query(table);
-    final conflicts = <Map<String, dynamic>>[];
+  Future<SyncResult> syncWithResult(Future<void> Function() syncOperation) async {
+    try {
+      final startTime = DateTime.now();
+      await syncOperation();
+      final endTime = DateTime.now();
 
-    for (var local in localData) {
-      final docRef = _firestore.collection(table).doc(local['id'] as String);
-      final cloud = await docRef.get();
-
-      if (cloud.exists && cloud.data() != local) {
-        conflicts.add({
-          'table': table,
-          'id': local['id'],
-          'local': local,
-          'cloud': cloud.data()!,
-        });
-      }
+      return SyncResult(
+        success: true,
+        itemsSynced: 1, // This should be updated with actual count
+        conflicts: [], // This should be populated with actual conflicts
+      );
+    } catch (e) {
+      return SyncResult(
+        success: false,
+        error: e.toString(),
+        itemsSynced: 0,
+        conflicts: [],
+      );
     }
-
-    return conflicts;
   }
 
-  Future<void> _updateLocalData(String table, String id, Map<String, dynamic> data) async {
-    final db = await _databaseHelper.database;
-    await db.insert(
-      table,
-      {...data, 'id': id, 'isSynced': 1},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
 
-  Future<void> _updateCloudData(String table, String id, Map<String, dynamic> data) async {
-    await _firestore.collection(table).doc(id).set(data);
-  }
-
-  Future<DateTime> _getLastSyncTime() async {
-    final db = await _databaseHelper.database;
-    final result = await db.query('sync_info');
-    if (result.isEmpty) {
-      return DateTime.fromMillisecondsSinceEpoch(0);
-    }
-    return DateTime.parse(result.first['last_sync'] as String);
-  }
-
-  Future<void> _updateLastSyncTime() async {
-    final db = await _databaseHelper.database;
-    await db.insert(
-      'sync_info',
-      {'last_sync': DateTime.now().toIso8601String()},
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
-  }
 
   void dispose() {
     _syncTimer?.cancel();
