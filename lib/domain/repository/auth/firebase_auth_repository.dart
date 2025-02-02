@@ -180,7 +180,9 @@ class FirebaseAuthRepository implements AuthRepository {
     try {
       final firebaseUser = _firebaseAuth.currentUser;
       if (firebaseUser == null) {
-        print('No current user');
+        if (kDebugMode) {
+          print('No current user');
+        }
         return null;
       }
 
@@ -245,6 +247,52 @@ class FirebaseAuthRepository implements AuthRepository {
       throw _handleAuthError(e);
     }
   }
+
+  @override
+  Future<void> deleteAccount() async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+
+      // Delete user data from Firestore
+      await _firestore.collection('users').doc(user.uid).delete();
+
+      // Delete user authentication
+      await user.delete();
+    } catch (e) {
+      print('Delete account error: $e');
+      throw Exception('Failed to delete account');
+    }
+  }
+
+  // Add method to update user profile
+  Future<User> updateUserProfile({String? displayName}) async {
+    try {
+      final user = _firebaseAuth.currentUser;
+      if (user == null) throw Exception('No user logged in');
+
+      final updates = <String, dynamic>{};
+      if (displayName != null) {
+        updates['displayName'] = displayName;
+      }
+
+      await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .update(updates);
+
+      final updatedDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      return User.fromMap(updatedDoc.data()!, user.uid);
+    } catch (e) {
+      print('Update profile error: $e');
+      throw Exception('Failed to update profile');
+    }
+  }
+
 
   Exception _handleAuthError(dynamic e) {
     if (e is firebase_auth.FirebaseAuthException) {
