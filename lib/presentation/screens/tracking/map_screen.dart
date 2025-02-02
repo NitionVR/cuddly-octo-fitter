@@ -30,15 +30,15 @@ class _MapScreenState extends State<MapScreen> {
 
   Future<void> _initializeAndCenter() async {
     final viewModel = context.read<MapViewModel>();
-    if (!viewModel.isInitialized) {
-      await viewModel.initialize();
-    }
-    // Add a small delay to ensure the map is ready
+    // Remove initialization check since it's handled in the ViewModel constructor
+    await viewModel.initialize();
+
     await Future.delayed(const Duration(milliseconds: 500));
     if (mounted) {
       await viewModel.centerOnCurrentLocation();
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class _MapScreenState extends State<MapScreen> {
       ),
       child: Consumer<MapViewModel>(
         builder: (context, viewModel, _) {
-          if (!viewModel.isInitialized) {
+          if (viewModel.isTracking && !viewModel.hasStableInitialPosition) {
             return const Scaffold(
               backgroundColor: Colors.transparent,
               body: Center(

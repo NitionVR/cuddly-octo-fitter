@@ -1,9 +1,8 @@
-// lib/presentation/widgets/map/stats_dashboard.dart
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../../theme/app_colors.dart';
-import '../../../theme/app_theme.dart';
 import '../../viewmodels/tracking/map_view_model.dart';
+
 
 class StatsDashboard extends StatelessWidget {
   final MapViewModel viewModel;
@@ -18,7 +17,7 @@ class StatsDashboard extends StatelessWidget {
     return GestureDetector(
       onTap: () => _showDetailedStats(context),
       child: Container(
-        height: 80, // Fixed height
+        height: 80,
         margin: const EdgeInsets.symmetric(horizontal: 16),
         child: GlassmorphicContainer(
           child: Row(
