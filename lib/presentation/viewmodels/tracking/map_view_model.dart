@@ -4,21 +4,23 @@ import 'package:flutter/material.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:location/location.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:provider/provider.dart';
+import '../../../data/database/providers/database_provider.dart';
 import '../../../data/datasources/local/location_service.dart';
 import '../../../domain/entities/tracking/route_point.dart';
 import '../../../domain/enums/goal_type.dart';
 import '../../../domain/repository/tracking/tracking_repository.dart';
 import '../../../domain/usecases/location_tracking_use_case.dart';
-import '../auth/auth_viewmodel.dart';
+import '../auth/auth_view_model.dart';
 import '../goals/goals_view_model.dart';
 
+
 class MapViewModel extends ChangeNotifier {
-  final LocationTrackingUseCase? _locationTrackingUseCase;
-  final TrackingRepository? _trackingRepository;
-  final LocationService? _locationService;
-  final AuthViewModel? _authViewModel;
-  final GoalsViewModel? _goalsViewModel;
+  final ITrackingRepository _trackingRepository;
+  final LocationTrackingUseCase _locationTrackingUseCase;
+  final LocationService _locationService;
+  final DatabaseProvider _databaseProvider;
+  final AuthViewModel _authViewModel;
+  final GoalsViewModel _goalsViewModel;
   final MapController _mapController;
   bool _hasStableInitialPosition = false;
   LatLng? _initialPosition;
@@ -40,14 +42,23 @@ class MapViewModel extends ChangeNotifier {
   StreamSubscription<RoutePoint>? _locationSubscription;
 
 
-  MapViewModel(
-      this._locationTrackingUseCase,
-      this._trackingRepository,
-      this._locationService,
-      this._mapController,
-      this._authViewModel,
-      this._goalsViewModel,
-      );
+  MapViewModel({
+    required ITrackingRepository trackingRepository,
+    required LocationTrackingUseCase locationTrackingUseCase,
+    required LocationService locationService,
+    required DatabaseProvider databaseProvider,
+    required AuthViewModel authViewModel,
+    required GoalsViewModel goalsViewModel,
+    required MapController mapController,
+  }) : _trackingRepository = trackingRepository,
+        _locationTrackingUseCase = locationTrackingUseCase,
+        _locationService = locationService,
+        _databaseProvider = databaseProvider,
+        _authViewModel = authViewModel,
+        _goalsViewModel = goalsViewModel,
+        _mapController = mapController {
+    initialize();
+  }
 
   // Public getters
   List<LatLng> get route => _route;
@@ -73,47 +84,27 @@ class MapViewModel extends ChangeNotifier {
 
   // Initialization and cleanup
   Future<void> initialize() async {
-    if (_locationService == null ||
-        _trackingRepository == null ||
-        _locationTrackingUseCase == null ||
-        _authViewModel == null) {
-      return;
-    }
-
     try {
-      // First check permissions
       await _checkLocationPermissions();
-
-      // Get initial location
-      final location = await _locationService?.getCurrentLocation();
-      if (location?.latitude != null && location?.longitude != null) {
-        // Create initial marker
-        _markers = [
-          Marker(
-            width: 40.0,
-            height: 40.0,
-            point: LatLng(location!.latitude!, location.longitude!),
-            builder: (ctx) => const Icon(
-              Icons.navigation,
-              color: Colors.red,
-              size: 20.0,
-            ),
-          ),
-        ];
-
-        // Move map to location
-        _mapController.move(
-          LatLng(location.latitude!, location.longitude!),
-          16.0,
-        );
-      }
-
-      // Load history after location is set
+      await _initializeLocation();
       await loadTrackingHistory();
-
+      await _databaseProvider.syncService.syncWorkouts();
       notifyListeners();
     } catch (e) {
       _handleError('Initialization failed: $e');
+    }
+  }
+
+  Future<void> _initializeLocation() async {
+    final location = await _locationService.getCurrentLocation();
+    if (location?.latitude != null && location?.longitude != null) {
+      _markers = [_createPositionMarker(
+          LatLng(location!.latitude!, location.longitude!)
+      )];
+      _mapController.move(
+        LatLng(location.latitude!, location.longitude!),
+        16.0,
+      );
     }
   }
 
@@ -389,37 +380,52 @@ class MapViewModel extends ChangeNotifier {
 
   // Data persistence
   Future<void> saveTrackingData() async {
-    final user = _authViewModel?.currentUser;
+    final user = _authViewModel.currentUser;
     if (user == null) throw Exception('User not authenticated');
 
-    // Ensure final calculations are done
     _updatePaceCalculation();
 
-    print("=== Saving Tracking Data ===");
-    print("Total Distance (meters): $_totalDistance");
-    print("Total Distance (km): ${_totalDistance / 1000}");
-    print("Route points count: ${_route.length}");
-    print("First point: ${_route.first}");
-    print("Last point: ${_route.last}");
-    print("Duration: ${getElapsedTime()}");
-    print("Pace: $_pace");
+    if (kDebugMode) {
+      print("=== Saving Tracking Data ===");
+      print("Total Distance (meters): $_totalDistance");
+      print("Total Distance (km): ${_totalDistance / 1000}");
+      print("Route points count: ${_route.length}");
+      print("Duration: ${getElapsedTime()}");
+      print("Pace: $_pace");
+    }
 
-    await _trackingRepository?.saveTrackingData(
-      userId: user.id,
-      timestamp: DateTime.now(),
-      route: _route,
-      totalDistance: _totalDistance,  // This is in meters
-      duration: DateTime.now().difference(_startTime!).inSeconds,
-      avgPace: _pace,
-    );
+    try {
+      await _trackingRepository.saveTrackingData(
+        userId: user.id,
+        timestamp: DateTime.now(),
+        route: _route,
+        totalDistance: _totalDistance,
+        duration: DateTime.now().difference(_startTime!).inSeconds,
+        paceSeconds: _calculatePaceSeconds(),
+      );
+
+      // Sync after saving
+      await _databaseProvider.syncService.syncWorkouts();
+    } catch (e) {
+      _handleError('Failed to save tracking data: $e');
+      rethrow;
+    }
+  }
+
+  int _calculatePaceSeconds() {
+    if (_totalDistance <= 0 || _startTime == null) return 0;
+    final elapsedSeconds = DateTime.now().difference(_startTime!).inSeconds;
+    final distanceInKm = _totalDistance / 1000;
+    return (elapsedSeconds / distanceInKm).round();
   }
 
   Future<void> clearTrackingHistory() async {
-    final user = _authViewModel?.currentUser;
+    final user = _authViewModel.currentUser;
     if (user == null) return;
 
     try {
-      await _trackingRepository?.clearTrackingHistory(user.id);
+      await _trackingRepository.clearTrackingHistory(user.id);
+      await _databaseProvider.syncService.syncWorkouts();
       _history.clear();
       notifyListeners();
     } catch (e) {
@@ -428,11 +434,14 @@ class MapViewModel extends ChangeNotifier {
   }
 
   Future<void> loadTrackingHistory() async {
-    final user = _authViewModel?.currentUser;
+    final user = _authViewModel.currentUser;
     if (user == null) return;
 
     try {
-      _history = (await _trackingRepository?.fetchTrackingHistory(userId: user.id))!;
+      final trackingHistory = await _trackingRepository.fetchTrackingHistory(
+        userId: user.id,
+      );
+      _history = trackingHistory.map((tracking) => tracking.toMap()).toList();
       notifyListeners();
     } catch (e) {
       _handleError('Failed to load tracking history: $e');
@@ -440,16 +449,38 @@ class MapViewModel extends ChangeNotifier {
   }
 
   Future<List<Map<String, dynamic>>> getLastThreeActivities() async {
-    final user = _authViewModel?.currentUser;
+    final user = _authViewModel.currentUser;
     if (user == null) return [];
 
     try {
-      final fullHistory = await _trackingRepository?.fetchTrackingHistory(userId: user.id);
-      return fullHistory?.take(3).toList() ?? [];
+      final trackingHistory = await _trackingRepository.fetchTrackingHistory(
+        userId: user.id,
+        limit: 3,
+        offset: 0,
+      );
+
+      return trackingHistory.map((tracking) => {
+        'id': tracking.id,
+        'userId': tracking.userId,
+        'timestamp': tracking.timestamp.toIso8601String(),
+        'route': tracking.route,
+        'totalDistance': tracking.totalDistance,
+        'duration': tracking.duration,
+        'paceSeconds': tracking.paceSeconds,
+        'pace': _formatPace(tracking.paceSeconds ?? 0),
+        // Add any additional fields needed for the UI
+      }).toList();
     } catch (e) {
       _handleError('Failed to get activities: $e');
       return [];
     }
+  }
+
+  String _formatPace(int paceSeconds) {
+    if (paceSeconds <= 0) return "0:00 min/km";
+    final minutes = paceSeconds ~/ 60;
+    final seconds = paceSeconds % 60;
+    return "$minutes:${seconds.toString().padLeft(2, '0')} min/km";
   }
 
   // Helpers
