@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../domain/entities/achievement.dart';
-import '../../../domain/repository/achievements/achievement_repository.dart';
+import '../../../domain/repository/achievements/achievements_repository.dart';
 import '../dao/achievements_dao.dart';
 import '../models/achievement_model.dart';
 

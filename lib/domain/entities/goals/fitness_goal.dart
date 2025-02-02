@@ -63,9 +63,13 @@ class FitnessGoal {
       currentProgress: map['currentProgress'] ?? 0.0,
       startDate: DateTime.parse(map['startDate']),
       endDate: DateTime.parse(map['endDate']),
-      isCompleted: map['isCompleted'] ?? false,
+      isCompleted: map['isCompleted'] is bool
+          ? map['isCompleted']
+          : map['isCompleted'] == 1,
       lastUpdated: DateTime.parse(map['lastUpdated']),
-      isActive: map['isActive'] ?? true,
+      isActive: map['isActive'] is bool
+          ? map['isActive']
+          : map['isActive'] == 1,
     );
   }
 
